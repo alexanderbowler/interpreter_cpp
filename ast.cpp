@@ -61,3 +61,18 @@ std::string Identifier::tokenLiteral() {
 std::string Identifier::expressionNode() {
     return ""; //TODO: implement this
 }
+
+// constructor with token
+ReturnStatement::ReturnStatement(Token token){
+    this->token = token;
+}
+
+// Overriding statement node from statement
+std::string ReturnStatement::statementNode() {
+    return ""; //TODO: implement this
+}
+
+// Overriding tokenLiteral from Statement
+std::string ReturnStatement::tokenLiteral() {
+    return token.literal;
+}

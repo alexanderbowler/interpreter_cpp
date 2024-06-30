@@ -46,7 +46,7 @@ struct Token {
 class Lexer{
     public:
 
-        std::unordered_map<TokenType, std::string> TokenTypetoString = {
+        std::unordered_map<TokenType, std::string> TokenTypeToString = {
             {TokenType::IDENT, "IDENT"},
             {TokenType::ILLEGAL, "ILLEGAL"},
             {TokenType::ENDOFFILE, "ENDOFFILE"},

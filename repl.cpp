@@ -19,7 +19,7 @@ void REPL::start(){
             return;
         lexer = Lexer(input);
         for(Token tok = lexer.nextToken(); tok.type != TokenType::ENDOFFILE; tok = lexer.nextToken()){
-            std::cout << "type: " << lexer.TokenTypetoString[tok.type] << ", literal: " << tok.literal << std::endl;
+            std::cout << "type: " << lexer.TokenTypeToString[tok.type] << ", literal: " << tok.literal << std::endl;
         }
     }
 }

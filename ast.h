@@ -76,5 +76,21 @@ class LetStatement : public Statement {
     Expression* value;
 };
 
+class ReturnStatement : public Statement {
+    public:
+    //  constructor with token
+    ReturnStatement(Token token);
+
+    // Overriding statement node from statement
+    std::string statementNode() override;
+
+    // Overriding tokenLiteral from Statement
+    std::string tokenLiteral() override;
+
+    private:
+    Token token;
+    Expression* returnValue;
+};
+
 
 #endif // AST_H

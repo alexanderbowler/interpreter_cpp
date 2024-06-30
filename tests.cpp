@@ -10,6 +10,12 @@ struct ExpectedToken {
     string expectedLiteral;
 };
 
+//helper function definitions:
+bool testLetStatement(Statement* s, string name);
+void checkParserErrors(Parser& p);
+bool testReturnStatement(Statement* s);
+
+// Tests for the Lexer
 TEST(LexerTests, BasicTokenTest) {
     string input = "=+(){},;";
     ExpectedToken tests[9] = {
@@ -193,10 +199,9 @@ if (5 < 10) { \
     }
 }
 
-bool testLetStatement(Statement* s, string name);
-
-TEST(ParserTests, LetStatementTest) {
-    string input = "let x = 5;\
+// Tests for the Parser
+TEST(ParserTests, LetStatementsTest) {
+    string input = "let x =  5;\
     let y = 10;\
     let foobar = 838383;";
 
@@ -204,6 +209,7 @@ TEST(ParserTests, LetStatementTest) {
     Parser parser = Parser(&lexer);
 
     Program* program = parser.parseProgram();
+    checkParserErrors(parser);
     ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
 
     ASSERT_EQ(program->statements.size(), 3) 
@@ -217,7 +223,29 @@ TEST(ParserTests, LetStatementTest) {
             return;
         }
     }
+}
 
+TEST(ParserTests, ReturnStatementsTest) {
+    string input = "return 5;\
+    return 10;\
+    return add(10);";
+
+    Lexer lexer = Lexer(input);
+    Parser parser = Parser(&lexer);
+
+    Program* program = parser.parseProgram();
+    checkParserErrors(parser);
+    ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+
+    ASSERT_EQ(program->statements.size(), 3) 
+    << "ERROR MSG: Program.statements does not contain 3 statements got=" << program->statements.size();
+
+    for(int i = 0; i < 3; i++){
+        Statement* stmt = program->statements[i];
+        if(testReturnStatement(stmt) == false){
+            return;
+        }
+    }
 }
 
 bool testLetStatement(Statement* s, string name){
@@ -244,4 +272,34 @@ bool testLetStatement(Statement* s, string name){
         return false;
     }
     return true;
+}
+
+// Parser Test Helper Function implementations
+bool testReturnStatement(Statement* s){
+    if(s->tokenLiteral() != "return"){
+        ADD_FAILURE() << "ERROR MSG: s.tokenLiteral not 'return'. got=" << s->tokenLiteral();
+        return false;
+    }
+    // Attempt to dynamically cast Statement& to ReturnStatement&
+    try {
+        ReturnStatement& returnStmt = dynamic_cast<ReturnStatement&>(*s);
+        // If the cast succeeds, you can further test returnStmt here
+        // For example, checking the name matches the expected name
+    } catch (const std::bad_cast& e) {
+        // If the dynamic cast fails, it means it is not a LetStatement
+        ADD_FAILURE() << "ERROR MSG: Statement is not a ReturnStatement. Dynamic cast failed.";
+        return false;
+    }
+    return true;
+}
+
+void checkParserErrors(Parser& p){
+    vector<string> errors = p.getErrors();
+    if(errors.size() == 0){
+        return; // no errors
+    }
+    ADD_FAILURE() << "ERROR MSG: parser has " << errors.size() << " errors";
+    for(string error : errors){
+        ADD_FAILURE() << "parser error: " << error;
+    }
 }
