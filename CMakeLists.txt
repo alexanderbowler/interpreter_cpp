@@ -17,17 +17,22 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(
-    lexer_tests
+    tests
     lexer.h
     lexer.cpp
-    lexer_tests.cpp
+    ast.h
+    ast.cpp
+    parser.h
+    parser.cpp
+    tests.cpp
+
 )
 
 
 target_link_libraries(
-    lexer_tests
+    tests
     GTest::gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(lexer_tests)
+gtest_discover_tests(tests)
