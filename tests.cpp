@@ -265,7 +265,7 @@ bool testLetStatement(Statement* s, string name){
             return false;
         }
         if(letStmt.name->tokenLiteral() != name){
-            ADD_FAILURE() << "ERROR MSG: Expected statement.name->tokenLiteral was not matched, got=" << letStmt.name->token.literal;
+            ADD_FAILURE() << "ERROR MSG: Expected statement.name->tokenLiteral was not matched, got=" << letStmt.name->tokenLiteral()<<" expected: "<<name;
             return false;
         }
     } catch (const std::bad_cast& e) {
@@ -417,6 +417,80 @@ bool testIntegerLiteral(Expression* expression, int value){
         return false;
     }
     return true;
+}
 
+TEST(ParserTests, InfixParsingTest){
+    struct {
+        std::string input;
+        int leftValue;
+        std::string operation;
+        int rightValue;
+    } infixTests[] = {
+        {"5 + 5;",5,  "+", 5},
+        {"5 - 5;", 5, "-", 5},
+        {"5 * 5;", 5, "*", 5},
+        {"5 / 5;", 5, "/", 5},
+        {"5 > 5;", 5, ">", 5},
+        {"5 < 5;", 5, "<", 5},
+        {"5 == 5;", 5, "==", 5},
+        {"5 != 5;", 5, "!=", 5},
+    };
+    for( int i = 0; i < 2; i++){
+        Lexer lexer = Lexer(infixTests[i].input);
+        Parser parser = Parser(&lexer);
+        Program* program = parser.parseProgram();
+        checkParserErrors(parser);
+        ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+        ASSERT_EQ(program->statements.size(), 1) << "ERROR MSG: Program.statements does not contain 1 statement got=" << program->statements.size();
+        try{
+            ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+            try{
+                InfixExpression* expr = dynamic_cast<InfixExpression*>(stmt->expressionValue);
+                if(!testIntegerLiteral(expr->left, infixTests[i].leftValue)){
+                    return;
+                }
+                EXPECT_EQ(expr->op, infixTests[i].operation)<<"ident.value not"<<infixTests[i].operation<<". got="<<expr->op;
+                if(!testIntegerLiteral(expr->right, infixTests[i].rightValue)){
+                    return;
+                }
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "ERROR MSG: expression not PrefixExpression. Dynamic cast failed.";
+                return;
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "ERROR MSG: program.statements[0] not ExpressionStatement. Dynamic cast failed.";
+            return;
+        } 
+    }
+}
 
+TEST(ParserTests, OperatorPrecedenceTest){
+    struct {
+        std::string input;
+        std::string expected;
+    } infixTests[] = {
+        {"-a * b;",  "((- a) * b)"},
+        {"!-a;", "(! (- a))"},
+        {"a + b + c", "((a + b) + c)"},
+        {"a + b - c", "((a + b) - c)"},
+        {"a * b * c", "((a * b) * c)"},
+        {"a * b / c", "((a * b) / c)"},
+        {"a + b / c", "(a + (b / c))"},
+        {"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
+        {"3 + 4; -5 * 5", "(3 + 4)((- 5) * 5)"},
+        {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+        {"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
+        {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+    };
+    for( int i = 0; i < 12; i++){
+        Lexer lexer = Lexer(infixTests[i].input);
+        cout<<infixTests[i].input<<endl;
+        Parser parser = Parser(&lexer);
+        Program* program = parser.parseProgram();
+        checkParserErrors(parser);
+        std::string result = program->toString();
+        EXPECT_EQ(result, infixTests[i].expected)<<"result not "<<infixTests[i].expected<<". got="<<result;
+    }
 }

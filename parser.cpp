@@ -14,6 +14,14 @@ Parser::Parser(Lexer* lexer){
     registerPrefix(TokenType::INT, &Parser::parseIntegerLiteral);
     registerPrefix(TokenType::BANG, &Parser::parsePrefixExpression);
     registerPrefix(TokenType::MINUS, &Parser::parsePrefixExpression);
+    registerInfix(TokenType::PLUS, &Parser::parseInfixExpression);
+    registerInfix(TokenType::MINUS, &Parser::parseInfixExpression);
+    registerInfix(TokenType::SLASH, &Parser::parseInfixExpression);
+    registerInfix(TokenType::ASTERISK, &Parser::parseInfixExpression);
+    registerInfix(TokenType::EQ, &Parser::parseInfixExpression);
+    registerInfix(TokenType::NEQ, &Parser::parseInfixExpression);
+    registerInfix(TokenType::GT, &Parser::parseInfixExpression);
+    registerInfix(TokenType::LT, &Parser::parseInfixExpression);
 }
 
 // Parses next token
@@ -141,6 +149,14 @@ Expression* Parser::parseExpression(int precedence){
         return nullptr;
     }
     Expression* leftExp = (this->*prefixFn)();
+    while(!peekTokenIs(TokenType::SEMICOLON) && precedence < peekPrecedence()){
+        infixParseFnPtr infixFn = infixParseFns[peekToken.type];
+        if(infixFn == nullptr){
+            return leftExp;
+        }
+        nextToken();
+        leftExp = (this->*infixFn)(leftExp);
+    }
     return leftExp;
 }
 
@@ -175,5 +191,30 @@ Expression* Parser::parsePrefixExpression(){
     PrefixExpression* expression = new PrefixExpression(currentToken, currentToken.literal);
     nextToken();
     expression->right = parseExpression(PREFIX);
+    return expression;
+}
+
+// returns the precedence of the peeked token
+int Parser::peekPrecedence(){
+    int p = precedence[peekToken.type];
+    if(p == 0)
+        return LOWEST;
+    return p;
+}
+
+// returns the precdeence of the current token
+int Parser::curPrecedence(){
+    int p = precedence[currentToken.type];
+    if(p == 0)
+        return LOWEST;
+    return p;
+}
+
+// Parses an infix expression
+Expression* Parser::parseInfixExpression(Expression* left){
+    InfixExpression* expression = new InfixExpression(currentToken, currentToken.literal, left);
+    int precedence = curPrecedence();
+    nextToken();
+    expression->right = parseExpression(precedence);
     return expression;
 }

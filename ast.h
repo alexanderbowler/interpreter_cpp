@@ -9,25 +9,28 @@
 
 class Node {
     public: 
-        virtual std::string tokenLiteral() = 0;
-
         virtual ~Node() = default;
 
         // EFFECTS:  returns the string representation of the node for debugging
         virtual std::string toString() = 0;
+
+        // returns the token literal
+        std::string tokenLiteral();
+
+        //vars
+        Token token;
 };
 
 class Expression : public Node {
     public: 
-        virtual std::string expressionNode() = 0;
+        virtual void expressionNode() = 0;
 };
 
 class Statement : public Node {
     public: 
-        virtual std::string statementNode() = 0;
+        virtual void statementNode() = 0;
 
         // vars
-        Token token;
         Expression* expressionValue;
 };
 
@@ -42,7 +45,7 @@ class Program : public Node {
         ~Program();
 
         // Overriding tokenLiteral from Node
-        std::string tokenLiteral() override;
+        std::string tokenLiteral(); //overrides from Node
 
         // Overriding toString from Node for printing
         std::string toString() override;
@@ -55,18 +58,13 @@ class Identifier : public Expression {
     // default constructor for Identifier
     Identifier(Token token, std::string value);
 
-    // Overriding tokenLiteral from Node
-    // EFFECTS:  returns the token literal
-    std::string tokenLiteral() override;
-
     // Overriding expressionNode from Expression
-    std::string expressionNode() override;
+    void expressionNode() override;
 
     // Overriding toString from Node for printing
     std::string toString() override;
 
     // vars
-    Token token;
     std::string value;
 };
 
@@ -78,13 +76,9 @@ class LetStatement : public Statement {
     // Setting the token constructor
     LetStatement(Token token);
 
-    // Overriding tokenLiteral from Statement
-    //EFFECTS:  prints out the token assosciated with this node
-    std::string tokenLiteral() override;
-
     // Overriding statementNode from Statement
     // EFFECTS: 
-    std::string statementNode() override;
+    void statementNode() override;
 
     // Overriding toString from Node for printing
     std::string toString() override;
@@ -101,10 +95,7 @@ class ReturnStatement : public Statement {
     ReturnStatement(Token token);
 
     // Overriding statement node from statement
-    std::string statementNode() override;
-
-    // Overriding tokenLiteral from Statement
-    std::string tokenLiteral() override;
+    void statementNode() override;
 
     // Overriding toString from Node for printing
     std::string toString() override;
@@ -122,11 +113,8 @@ class ExpressionStatement : public Statement {
     // constructor with expression
     ExpressionStatement(Expression* expression);
 
-    // Overriding tokenLiteral from Statement
-    std::string tokenLiteral() override;
-
     // Overriding statementNode from Statement
-    std::string statementNode() override;
+    void statementNode() override;
 
     // Overriding toString from Node for printing
     std::string toString() override;
@@ -142,18 +130,14 @@ class IntegerLiteral: public Expression{
     // Token constructor
     IntegerLiteral(Token token);
 
-    // Overriding tokenLiteral from Node
-    std::string tokenLiteral() override;
-
     // Overriding expressionNode from Expression
-    std::string expressionNode() override;
+    void expressionNode() override;
 
     // Overriding toString from Node for printing
     std::string toString() override;
 
     // vars
     // Token token; from statement
-    Token token;
     int value;
 };
 
@@ -166,17 +150,33 @@ class PrefixExpression: public Expression{
     ~PrefixExpression();
 
     // expression node override
-    std::string expressionNode() override;
-
-    // token literal override
-    std::string tokenLiteral() override;
+    void expressionNode() override;
 
     // toString override
     std::string toString() override;
 
     //vars
-    Token token;
     std::string op;
+    Expression* right;
+};
+
+class InfixExpression: public Expression{
+    public:
+    // constructor with token, operator, and left expression
+    InfixExpression(Token token, std::string op, Expression* left);
+
+    // infix destructor
+    ~InfixExpression();
+
+    // expression node override
+    void expressionNode() override;
+
+    // toString override
+    std::string toString() override;
+
+    //vars
+    std::string op;
+    Expression* left;
     Expression* right;
 };
 

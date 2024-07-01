@@ -2,6 +2,11 @@
 
 #include "ast.h"
 
+// returns the token literal
+std::string Node::tokenLiteral(){
+    return token.literal;
+}
+
 // default constructor for Program
 Program::Program(){
     statements = std::vector<Statement*>();
@@ -41,16 +46,9 @@ LetStatement::LetStatement(Token token){
     this->token = token;
 }
 
-// Overriding tokenLiteral from Statement
-//EFFECTS:  prints out the token assosciated with this node
-std::string LetStatement::tokenLiteral() {
-    return token.literal;
-}
-
 // Overriding statementNode from Statement
 // EFFECTS: 
-std::string LetStatement::statementNode() {
-    return ""; //TODO: implement this
+void LetStatement::statementNode() {
 }
 
 // Overriding toString from Node for printing
@@ -69,18 +67,10 @@ std::string LetStatement::toString(){
 Identifier::Identifier(Token token, std::string value){
     this->token = token;
     this->value = value;
-
-}
-
-// Overriding tokenLiteral from Node
-// EFFECTS:  returns the token literal
-std::string Identifier::tokenLiteral() {
-    return token.literal;
 }
 
 // Overriding expressionNode from Expression
-std::string Identifier::expressionNode() {
-    return ""; //TODO: implement this
+void Identifier::expressionNode() {
 }
 
 // Overriding toString from Node for printing
@@ -94,13 +84,7 @@ ReturnStatement::ReturnStatement(Token token){
 }
 
 // Overriding statement node from statement
-std::string ReturnStatement::statementNode() {
-    return ""; //TODO: implement this
-}
-
-// Overriding tokenLiteral from Statement
-std::string ReturnStatement::tokenLiteral() {
-    return token.literal;
+void ReturnStatement::statementNode() {
 }
 
 // Overriding toString from Node for printing
@@ -112,11 +96,6 @@ std::string ReturnStatement::toString(){
     }
     output += ";";
     return output; 
-}
-
-// Overriding tokenLiteral from Statement
-std::string ExpressionStatement::tokenLiteral() {
-    return token.literal;
 }
 
 // default constructor
@@ -132,8 +111,7 @@ ExpressionStatement::ExpressionStatement(Expression* expression){
 
 
 // Overriding statementNode from Statement
-std::string ExpressionStatement::statementNode(){
-    return ""; //TODO: implement this
+void ExpressionStatement::statementNode(){
 }
 
 // Overriding toString from Node for printing
@@ -151,15 +129,8 @@ IntegerLiteral::IntegerLiteral(Token token){
 
 }
 
-// Overriding tokenLiteral from Node
-std::string IntegerLiteral::tokenLiteral(){
-    return token.literal;
-}
-
 // Overriding expressionNode from Expression
-std::string IntegerLiteral::expressionNode(){
-    return ""; //TODO: implement this
-
+void IntegerLiteral::expressionNode(){
 }
 
 // Overriding toString from Node for printing
@@ -168,13 +139,7 @@ std::string IntegerLiteral::toString() {
 }
 
 // expression node override
-std::string PrefixExpression::expressionNode(){
-    return ""; //TODO: implement this
-}
-
-// token literal override
-std::string PrefixExpression::tokenLiteral() {
-    return token.literal;
+void PrefixExpression::expressionNode(){
 }
 
 // toString override
@@ -195,4 +160,32 @@ PrefixExpression::PrefixExpression(Token token, std::string op){
 // prefix destructor
 PrefixExpression::~PrefixExpression(){
     delete right;
+}
+
+// constructor with token, operator, and left expression
+InfixExpression::InfixExpression(Token token, std::string op, Expression* left){
+    this->token = token;
+    this->op = op;
+    this->left = left;
+}
+
+// infix destructor
+InfixExpression::~InfixExpression(){
+    delete left;
+    delete right;
+}
+
+// expression node override
+void InfixExpression::expressionNode(){
+}
+
+// toString override
+std::string InfixExpression::toString(){
+    std::string output = "";
+    output += "(";
+    output += left->toString();
+    output += " " + op + " ";
+    output += right->toString();
+    output += ")";
+    return output;
 }

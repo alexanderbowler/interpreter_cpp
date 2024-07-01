@@ -20,6 +20,17 @@ class Parser {
                         PREFIX = 6, // -X or !X
                         CALL = 7; // myFunction(X)
 
+    std::unordered_map<TokenType, int> precedence = {
+        {TokenType::EQ, EQUALS},
+        {TokenType::NEQ, EQUALS},
+        {TokenType::LT, LESSGREATER},
+        {TokenType::GT, LESSGREATER},
+        {TokenType::PLUS, SUM},
+        {TokenType::MINUS, SUM},
+        {TokenType::SLASH, PRODUCT},
+        {TokenType::ASTERISK, PRODUCT}        
+    };
+
     typedef Expression* (Parser::*prefixParseFnPtr)();
     typedef Expression* (Parser::*infixParseFnPtr)(Expression*);
     public:
@@ -80,6 +91,15 @@ class Parser {
 
         // Parses a prefix expression
         Expression* parsePrefixExpression();
+
+        // returns the precedence of the peeked token
+        int peekPrecedence();
+
+        // returns the precdeence of the current token
+        int curPrecedence();
+
+        // Parses an infix expression
+        Expression* parseInfixExpression(Expression* left);
 
     private:
         Lexer* lexer;
