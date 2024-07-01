@@ -14,6 +14,8 @@ struct ExpectedToken {
 bool testLetStatement(Statement* s, string name);
 void checkParserErrors(Parser& p);
 bool testReturnStatement(Statement* s);
+bool testIntegerLiteral(Expression* expression, int value);
+
 
 // Tests for the Lexer
 TEST(LexerTests, BasicTokenTest) {
@@ -302,4 +304,119 @@ void checkParserErrors(Parser& p){
     for(string error : errors){
         ADD_FAILURE() << "parser error: " << error;
     }
+}
+
+TEST(AstTest, ToStringTest){
+    Program* program = new Program();
+    LetStatement* letStmt = new LetStatement(Token{TokenType::LET, "let"});
+    letStmt->name = new Identifier(Token{TokenType::IDENT, "myVar"}, "myVar");
+    letStmt->expressionValue = new Identifier(Token{TokenType::IDENT, "anotherVar"}, "anotherVar");
+    if(letStmt->toString() != "let myVar = anotherVar;"){
+        ADD_FAILURE() << "ERROR MSG: letStmt.toString() wrong. got=" << letStmt->toString();
+    }
+
+}
+
+TEST(ParserTests, IdentifierExpressionTest){
+    string input = "foobar;";
+    Lexer lexer = Lexer(input);
+    Parser parser = Parser(&lexer);
+    Program* program = parser.parseProgram();
+    checkParserErrors(parser);
+    ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+    ASSERT_EQ(program->statements.size(), 1) << "ERROR MSG: Program.statements does not contain 1 statement got=" << program->statements.size();
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            Identifier* ident = dynamic_cast<Identifier*>(stmt->expressionValue);
+            EXPECT_EQ(ident->value, "foobar")<<"ident.value not 'foobar'. got="<<ident->value;
+            EXPECT_EQ(ident->tokenLiteral(), "foobar")<<"ident.tokenLiteral not 'foobar'. got="<<ident->tokenLiteral();
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "ERROR MSG: expression not Identifier. Dynamic cast failed.";
+            return;
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "ERROR MSG: program.statements[0] not ExpressionStatement. Dynamic cast failed.";
+        return;
+    }
+}
+
+TEST(ParserTests, IntegerLiteralExpressionTest){
+    string input = "5;";
+    Lexer lexer = Lexer(input);
+    Parser parser = Parser(&lexer);
+    Program* program = parser.parseProgram();
+    checkParserErrors(parser);
+    ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+    ASSERT_EQ(program->statements.size(), 1) << "ERROR MSG: Program.statements does not contain 1 statement got=" << program->statements.size();
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            IntegerLiteral* literal = dynamic_cast<IntegerLiteral*>(stmt->expressionValue);
+            EXPECT_EQ(literal->value, 5)<<"ident.value not 5. got="<<literal->value;
+            EXPECT_EQ(literal->tokenLiteral(), "5")<<"ident.tokenLiteral not '5'. got="<<literal->tokenLiteral();
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "ERROR MSG: expression not IntegerLiteral. Dynamic cast failed.";
+            return;
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "ERROR MSG: program.statements[0] not ExpressionStatement. Dynamic cast failed.";
+        return;
+    }
+}
+
+TEST(ParserTests, PrefixParsingTest){
+    struct {
+        std::string input;
+        std::string operation;
+        int value;
+    } prefixTests[] = {
+        {"!5;", "!", 5},
+        {"-15;", "-", 15},
+    };
+    for( int i = 0; i < 2; i++){
+        Lexer lexer = Lexer(prefixTests[i].input);
+        Parser parser = Parser(&lexer);
+        Program* program = parser.parseProgram();
+        checkParserErrors(parser);
+        ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+        ASSERT_EQ(program->statements.size(), 1) << "ERROR MSG: Program.statements does not contain 1 statement got=" << program->statements.size();
+        try{
+            ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+            try{
+                PrefixExpression* expr = dynamic_cast<PrefixExpression*>(stmt->expressionValue);
+                EXPECT_EQ(expr->op, prefixTests[i].operation)<<"ident.value not"<<prefixTests[i].operation<<". got="<<expr->op;
+                if(!testIntegerLiteral(expr->right, prefixTests[i].value)){
+                    return;
+                }
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "ERROR MSG: expression not PrefixExpression. Dynamic cast failed.";
+                return;
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "ERROR MSG: program.statements[0] not ExpressionStatement. Dynamic cast failed.";
+            return;
+        } 
+    }
+}
+
+bool testIntegerLiteral(Expression* expression, int value){
+    try{
+        IntegerLiteral* literal = dynamic_cast<IntegerLiteral*>(expression);
+        EXPECT_EQ(literal->value, value)<<"literal.value not "<<value<<". got="<<literal->value;
+        EXPECT_EQ(literal->tokenLiteral(), std::to_string(value))<<"literal.tokenLiteral not "<<value<<". got="<<literal->tokenLiteral();
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "ERROR MSG: expression not IntegerLiteral. Dynamic cast failed.";
+        return false;
+    }
+    return true;
+
+
 }

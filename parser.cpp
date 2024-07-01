@@ -9,6 +9,11 @@ Parser::Parser(Lexer* lexer){
     // reads two tokens to initialize currentToken and peekToken
     nextToken();
     nextToken();
+    // register prefix parse functions
+    registerPrefix(TokenType::IDENT, &Parser::parseIdentifier);
+    registerPrefix(TokenType::INT, &Parser::parseIntegerLiteral);
+    registerPrefix(TokenType::BANG, &Parser::parsePrefixExpression);
+    registerPrefix(TokenType::MINUS, &Parser::parsePrefixExpression);
 }
 
 // Parses next token
@@ -37,7 +42,7 @@ Statement* Parser::parseStatement(){
         case TokenType::RETURN:
             return parseReturnStatement();
         default:
-            return nullptr;
+            return parseExpressionStatement();
     }
 }
 
@@ -106,4 +111,69 @@ void Parser::addPeekError(TokenType type){
 // Returns the errors vector
 std::vector<std::string>& Parser::getErrors(){
     return errors;
+}
+
+// Adds a prefix parse function to the prefixParseFns map
+void Parser::registerPrefix(TokenType type, prefixParseFnPtr fn){
+    prefixParseFns[type] = fn;
+}
+
+// Adds an infix parse function to the infixParseFns map
+void Parser::registerInfix(TokenType type, infixParseFnPtr fn){
+    infixParseFns[type] = fn;
+}
+
+// Parses an expression statement
+ExpressionStatement* Parser::parseExpressionStatement(){
+    ExpressionStatement* stmt = new ExpressionStatement(currentToken);
+    stmt->expressionValue = parseExpression(LOWEST);
+    if(peekTokenIs(TokenType::SEMICOLON)){
+        nextToken();
+    }
+    return stmt;
+}
+
+// Parses an expression         
+Expression* Parser::parseExpression(int precedence){
+    prefixParseFnPtr prefixFn = prefixParseFns[currentToken.type];
+    if(prefixFn == nullptr){
+        noPrefixParseFnError(currentToken.type);
+        return nullptr;
+    }
+    Expression* leftExp = (this->*prefixFn)();
+    return leftExp;
+}
+
+// Parses an identifier
+Expression* Parser::parseIdentifier(){
+    return new Identifier(currentToken, currentToken.literal);
+}
+
+// Parses an integer Literal
+Expression* Parser::parseIntegerLiteral(){
+    IntegerLiteral* lit = new IntegerLiteral(currentToken);
+    try{
+        int val = std::stoi(currentToken.literal);
+        lit->value = val;
+    }   
+    catch(std::invalid_argument& e){
+        std::string error = "could not parse " + currentToken.literal + " as integer";
+        errors.push_back(error);
+        return nullptr;
+    }
+    return lit;
+}
+    
+// error catcher if there is no parser function
+void Parser::noPrefixParseFnError(TokenType type){
+    std::string message = "no prefix parse function for " + lexer->TokenTypeToString[type] + " found";
+    errors.push_back(message);
+}
+
+// Parses a prefix expression
+Expression* Parser::parsePrefixExpression(){
+    PrefixExpression* expression = new PrefixExpression(currentToken, currentToken.literal);
+    nextToken();
+    expression->right = parseExpression(PREFIX);
+    return expression;
 }

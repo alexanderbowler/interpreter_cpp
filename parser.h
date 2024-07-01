@@ -9,7 +9,19 @@
 #include "ast.h"
 #include "lexer.h"
 
+
+
 class Parser {
+    static const int    LOWEST = 1, 
+                        EQUALS = 2, // ==
+                        LESSGREATER = 3, // > or <
+                        SUM = 4, // +
+                        PRODUCT = 5, // *
+                        PREFIX = 6, // -X or !X
+                        CALL = 7; // myFunction(X)
+
+    typedef Expression* (Parser::*prefixParseFnPtr)();
+    typedef Expression* (Parser::*infixParseFnPtr)(Expression*);
     public:
     // default constructor for Parser
         Parser(Lexer* lexer);
@@ -45,11 +57,37 @@ class Parser {
         // Returns the errors vector
         std::vector<std::string>& getErrors();
 
+        // Adds a prefix parse function to the prefixParseFns map
+        void registerPrefix(TokenType type, prefixParseFnPtr fn);
+
+        // Adds an infix parse function to the infixParseFns map
+        void registerInfix(TokenType type, infixParseFnPtr fn);
+
+        // Parses an expression statement
+        ExpressionStatement* parseExpressionStatement();
+
+        // Parses an expression
+        Expression* parseExpression(int precedence);
+
+        // Parses an identifier
+        Expression* parseIdentifier();
+
+        // Parses an integer Literal
+        Expression* parseIntegerLiteral();
+
+        // error catcher if there is no parser function
+        void noPrefixParseFnError(TokenType type);
+
+        // Parses a prefix expression
+        Expression* parsePrefixExpression();
+
     private:
         Lexer* lexer;
         Token currentToken;
         Token peekToken;
         std::vector<std::string> errors;
+        std::unordered_map<TokenType, prefixParseFnPtr> prefixParseFns;
+        std::unordered_map<TokenType, infixParseFnPtr> infixParseFns;
 };
 
 #endif // PARSER_H
