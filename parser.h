@@ -101,6 +101,18 @@ class Parser {
         // Parses an infix expression
         Expression* parseInfixExpression(Expression* left);
 
+        // Parses a boolean expresion
+        Expression* parseBoolean();
+
+        // Parses expression within parenthesis
+        Expression* parseGroupedExpression();
+
+        // Parses an IfExpression returning an IfExpression*
+        Expression* parseIfExpression();
+
+        // parses a whole block of code typically in if else
+        BlockStatement* parseBlockStatement();
+
     private:
         Lexer* lexer;
         Token currentToken;

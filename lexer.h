@@ -45,36 +45,34 @@ struct Token {
 
 class Lexer{
     public:
-
         std::unordered_map<TokenType, std::string> TokenTypeToString = {
             {TokenType::IDENT, "IDENT"},
             {TokenType::ILLEGAL, "ILLEGAL"},
             {TokenType::ENDOFFILE, "ENDOFFILE"},
             {TokenType::INT, "INT"},
-            {TokenType::ASSIGN, "ASSIGN"},
-            {TokenType::PLUS, "PLUS"},
-            {TokenType::COMMA, "COMMA"},
-            {TokenType::SEMICOLON, "SEMICOLON"},
-            {TokenType::LPAREN, "LPAREN"},
-            {TokenType::RPAREN, "RPAREN"},
-            {TokenType::LBRACE, "LBRACE"},
-            {TokenType::RBRACE, "RBRACE"},
+            {TokenType::ASSIGN, "="},
+            {TokenType::PLUS, "+"},
+            {TokenType::COMMA, ","},
+            {TokenType::SEMICOLON, ";"},
+            {TokenType::LPAREN, "("},
+            {TokenType::RPAREN, ")"},
+            {TokenType::LBRACE, "{"},
+            {TokenType::RBRACE, "}"},
             {TokenType::FUNCTION, "FUNCTION"},
             {TokenType::LET, "LET"},
-            {TokenType::MINUS, "MINUS"},
-            {TokenType::BANG, "BANG"},
-            {TokenType::ASTERISK, "ASTERISK"},
-            {TokenType::SLASH, "SLASH"},
-            {TokenType::LT, "LT"},
-            {TokenType::GT, "GT"},
-            {TokenType::NEQ, "NEQ"},
-            {TokenType::EQ, "EQ"},
+            {TokenType::MINUS, "-"},
+            {TokenType::BANG, "!"},
+            {TokenType::ASTERISK, "*"},
+            {TokenType::SLASH, "/"},
+            {TokenType::LT, "<"},
+            {TokenType::GT, ">"},
+            {TokenType::NEQ, "!="},
+            {TokenType::EQ, "=="},
             {TokenType::FALSE, "FALSE"},
             {TokenType::TRUE, "TRUE"},
             {TokenType::RETURN, "RETURN"},
             {TokenType::IF, "IF"},
-            {TokenType::ELSE, "ELSE"} 
-        };
+            {TokenType::ELSE, "ELSE"}};
 
         // Lexer constructor
         // REQUIRES: input is a string

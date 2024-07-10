@@ -2,6 +2,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include <string>
+#include <variant>
 
 using namespace std;
 
@@ -15,6 +16,9 @@ bool testLetStatement(Statement* s, string name);
 void checkParserErrors(Parser& p);
 bool testReturnStatement(Statement* s);
 bool testIntegerLiteral(Expression* expression, int value);
+template <typename leftType, typename rightType>
+bool testInfixExpression(Expression* exp, leftType left, std::string op, rightType right);
+
 
 
 // Tests for the Lexer
@@ -420,11 +424,12 @@ bool testIntegerLiteral(Expression* expression, int value){
 }
 
 TEST(ParserTests, InfixParsingTest){
+    
     struct {
         std::string input;
-        int leftValue;
+        std::variant<int, std::string, bool> leftValue;
         std::string operation;
-        int rightValue;
+        std::variant<int, std::string, bool> rightValue;
     } infixTests[] = {
         {"5 + 5;",5,  "+", 5},
         {"5 - 5;", 5, "-", 5},
@@ -434,8 +439,19 @@ TEST(ParserTests, InfixParsingTest){
         {"5 < 5;", 5, "<", 5},
         {"5 == 5;", 5, "==", 5},
         {"5 != 5;", 5, "!=", 5},
+        {"foobar + barfoo;", "foobar", "+", "barfoo"},
+		{"foobar - barfoo;", "foobar", "-", "barfoo"},
+		{"foobar * barfoo;", "foobar", "*", "barfoo"},
+		{"foobar / barfoo;", "foobar", "/", "barfoo"},
+		{"foobar > barfoo;", "foobar", ">", "barfoo"},
+		{"foobar < barfoo;", "foobar", "<", "barfoo"},
+		{"foobar == barfoo;", "foobar", "==", "barfoo"},
+		{"foobar != barfoo;", "foobar", "!=", "barfoo"},
+        {"true == true", true, "==", true},
+		{"true != false", true, "!=", false},
+		{"false == false", false, "==", false},
     };
-    for( int i = 0; i < 2; i++){
+    for( int i = 0; i < 19; i++){
         Lexer lexer = Lexer(infixTests[i].input);
         Parser parser = Parser(&lexer);
         Program* program = parser.parseProgram();
@@ -446,11 +462,9 @@ TEST(ParserTests, InfixParsingTest){
             ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
             try{
                 InfixExpression* expr = dynamic_cast<InfixExpression*>(stmt->expressionValue);
-                if(!testIntegerLiteral(expr->left, infixTests[i].leftValue)){
-                    return;
-                }
-                EXPECT_EQ(expr->op, infixTests[i].operation)<<"ident.value not"<<infixTests[i].operation<<". got="<<expr->op;
-                if(!testIntegerLiteral(expr->right, infixTests[i].rightValue)){
+                if(!testInfixExpression(expr, infixTests[i].leftValue, infixTests[i].operation, infixTests[i].rightValue))
+                {
+                    ADD_FAILURE() << "Test infix returned false";
                     return;
                 }
             }
@@ -471,6 +485,10 @@ TEST(ParserTests, OperatorPrecedenceTest){
         std::string input;
         std::string expected;
     } infixTests[] = {
+        {"true;", "true"},
+        {"false;", "false"},
+        {"3 > 5 == false", "((3 > 5) == false)"},
+        {"3 < 5 == true", "((3 < 5) == true)"},
         {"-a * b;",  "((- a) * b)"},
         {"!-a;", "(! (- a))"},
         {"a + b + c", "((a + b) + c)"},
@@ -483,14 +501,252 @@ TEST(ParserTests, OperatorPrecedenceTest){
         {"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
         {"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
         {"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+        {
+			"1 + (2 + 3) + 4",
+			"((1 + (2 + 3)) + 4)",
+		},
+		{
+			"(5 + 5) * 2",
+			"((5 + 5) * 2)",
+		},
+		{
+			"2 / (5 + 5)",
+			"(2 / (5 + 5))",
+		},
+		{
+			"(5 + 5) * 2 * (5 + 5)",
+			"(((5 + 5) * 2) * (5 + 5))",
+		},
+		{
+			"-(5 + 5)",
+			"(- (5 + 5))",
+		},
+		{
+			"!(true == true)",
+			"(! (true == true))",
+		},
     };
-    for( int i = 0; i < 12; i++){
+    for( int i = 0; i < 22; i++){
         Lexer lexer = Lexer(infixTests[i].input);
-        cout<<infixTests[i].input<<endl;
         Parser parser = Parser(&lexer);
         Program* program = parser.parseProgram();
         checkParserErrors(parser);
         std::string result = program->toString();
         EXPECT_EQ(result, infixTests[i].expected)<<"result not "<<infixTests[i].expected<<". got="<<result;
+    }
+}
+
+bool testIdentifier(Expression* exp, std::string value){
+    try{
+        Identifier* ident = dynamic_cast<Identifier*>(exp);
+        if(ident->value != value){
+            ADD_FAILURE() << "ERROR MSG: ident.value not "<<value<<" got="<<ident->value;
+            return false;
+        }
+        if(ident->tokenLiteral() != value){
+            ADD_FAILURE() << "ERROR MSG: ident.tokenLiteral not "<<value<<" got="<<ident->tokenLiteral();
+            return false;
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE()<<"ERROR MSG: expression not an identifier*. Failed dynamic cast";
+        return false;
+    }
+    return true;
+}
+
+bool testBooleanLiteral(Expression* exp, bool value){
+    try{
+        Boolean* expBool = dynamic_cast<Boolean*>(exp);
+        if(expBool->value != value){
+            ADD_FAILURE() << "ERROR MSG: expBool.value not "<< value <<" got="<<expBool->value;
+            return false;
+        }
+        if(expBool->tokenLiteral() != (value ? "true" : "false")){
+            ADD_FAILURE() << "ERROR MSG: expBool->tokenLiteral() not "<<value<<" got="<<expBool->tokenLiteral();
+            return false;
+        }
+        return true;
+    }
+    catch(const bad_cast& e){
+        ADD_FAILURE() << "Failed to cast to Boolean* class";
+        return false;
+    }
+}
+
+class TestLiteralExpression {
+    Expression* exp;
+    public:
+    // Constructor
+    TestLiteralExpression(Expression* exp): exp(exp) {}
+
+    bool operator()(int value) const {
+        return testIntegerLiteral(exp, value);
+    }
+
+    bool operator()(const std::string& value) const {
+        return testIdentifier(exp, value);
+    }
+    bool operator()(const bool value) const {
+        return testBooleanLiteral(exp, value);
+    }
+};
+
+
+// four overloaded functions
+template <typename leftType, typename rightType>
+bool testInfixExpression(Expression* exp, leftType left, std::string op, rightType right){
+    try{ 
+        InfixExpression* infixExp = dynamic_cast<InfixExpression*>(exp);
+        if(infixExp->op != op){
+            ADD_FAILURE() << "infixExpression.op is not "<< op << " got=" << infixExp->op;
+            return false;
+        }
+        TestLiteralExpression leftVisitor(infixExp->left);
+        TestLiteralExpression rightVisitor(infixExp->right);
+        return std::visit(leftVisitor, left) && std::visit(rightVisitor,right);
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Expression not an infix expression. Dynamic cast failed";
+        return false;
+    }
+    return true;
+}
+
+
+
+TEST(ParserTests, BooleanExpressionTests){
+   struct {
+    string input;
+    bool expected;
+   } inputs[] = {
+    { "true;", true},
+   {"false", false}
+   };
+    
+    for(int i = 0; i < sizeof(inputs)/sizeof(inputs[0]); i++){
+
+    
+        Lexer lexer = Lexer(inputs[i].input);
+        Parser parser = Parser(&lexer);
+
+        Program* program = parser.parseProgram();
+        checkParserErrors(parser);
+        ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+
+        ASSERT_EQ(program->statements.size(), 1) 
+        << "ERROR MSG: Program.statements does not contain 1 statements got=" << program->statements.size();
+
+        try {
+            ExpressionStatement* exp = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+            try{
+                Boolean* boolean = dynamic_cast<Boolean*>(exp->expressionValue);
+                if(boolean->value != inputs[i].expected){
+                    ADD_FAILURE() << "boolean.value not "<< inputs[i].expected<<" got="<<boolean->value;
+                }
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "statement isn't Boolean class statement. Failed to dynamic cast";
+
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "statement isn't expression statement. Failed to dynamic cast";
+        }
+    }
+}
+
+TEST(ParserTests, TestIfExpression){
+     struct {
+        std::string input;
+        std::variant<int, std::string, bool> leftValue;
+        std::string operation;
+        std::variant<int, std::string, bool> rightValue;
+        std::string consequence;
+    } ifTests[] = {
+        {"if (x < y) {x}", "x",  "<", "y", "x"},
+    };
+    Lexer l = Lexer(ifTests[0].input);
+    Parser parser = Parser(&l);
+    Program* program = parser.parseProgram();
+    checkParserErrors(parser);
+    ASSERT_EQ(program->statements.size(), 1) 
+    << "ERROR MSG: Program.statements does not contain 1 statements got=" << program->statements.size();
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            IfExpression* exp = dynamic_cast<IfExpression*>(stmt->expressionValue);
+            if(!testInfixExpression(exp->condition, ifTests[0].leftValue, ifTests[0].operation, ifTests[0].rightValue))
+                return;
+            ASSERT_EQ(exp->consequence->statements.size(), 1) << "Consequences is not 1 statement. got="<< exp->consequence->statements.size()<<"\n";
+            try{
+                ExpressionStatement* consequence = dynamic_cast<ExpressionStatement*>(exp->consequence->statements[0]);
+                if(!testIdentifier(consequence->expressionValue, ifTests[0].consequence))
+                    return;
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "consequence.statments[0] is not ExpressionStatement. Dynamic Cast Failed.\n";
+            }
+            if(exp->alternative != nullptr)
+                ADD_FAILURE() << "ifexpression.alternative is not nullptr.";
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "stmt.exp is not a IfExpression. Dynamic cast failed\n";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
+    }
+}
+
+TEST(ParserTests, TestIfElseExpression){
+     struct {
+        std::string input;
+        std::variant<int, std::string, bool> leftValue;
+        std::string operation;
+        std::variant<int, std::string, bool> rightValue;
+        std::string consequence;
+        std::string alternative;
+    } ifTests[] = {
+        {"if (x < y) {x} else {y}", "x",  "<", "y", "x", "y"},
+    };
+    Lexer l = Lexer(ifTests[0].input);
+    Parser parser = Parser(&l);
+    Program* program = parser.parseProgram();
+    checkParserErrors(parser);
+    ASSERT_EQ(program->statements.size(), 1) 
+    << "ERROR MSG: Program.statements does not contain 1 statements got=" << program->statements.size();
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            IfExpression* exp = dynamic_cast<IfExpression*>(stmt->expressionValue);
+            if(!testInfixExpression(exp->condition, ifTests[0].leftValue, ifTests[0].operation, ifTests[0].rightValue))
+                return;
+            ASSERT_EQ(exp->consequence->statements.size(), 1) << "Consequences is not 1 statement. got="<< exp->consequence->statements.size()<<"\n";
+            try{
+                ExpressionStatement* consequence = dynamic_cast<ExpressionStatement*>(exp->consequence->statements[0]);
+                if(!testIdentifier(consequence->expressionValue, ifTests[0].consequence))
+                    return;
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "consequence.statments[0] is not ExpressionStatement. Dynamic Cast Failed.\n";
+            }
+            try{
+                ExpressionStatement* alternative = dynamic_cast<ExpressionStatement*>(exp->alternative->statements[0]);
+                if(!testIdentifier(alternative->expressionValue, ifTests[0].alternative))
+                    return;
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "alternative.statements[0] is not an ExpressionStatement. Dynamic Cast Failed.\n";
+            }
+            if(exp->alternative != nullptr)
+                ADD_FAILURE() << "ifexpression.alternative is not nullptr.";
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "stmt.exp is not a IfExpression. Dynamic cast failed\n";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
     }
 }

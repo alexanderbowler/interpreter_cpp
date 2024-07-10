@@ -22,6 +22,10 @@ Parser::Parser(Lexer* lexer){
     registerInfix(TokenType::NEQ, &Parser::parseInfixExpression);
     registerInfix(TokenType::GT, &Parser::parseInfixExpression);
     registerInfix(TokenType::LT, &Parser::parseInfixExpression);
+    registerPrefix(TokenType::TRUE, &Parser::parseBoolean);
+    registerPrefix(TokenType::FALSE, &Parser::parseBoolean);
+    registerPrefix(TokenType::LPAREN, &Parser::parseGroupedExpression);
+    registerPrefix(TokenType::IF, &Parser::parseIfExpression);
 }
 
 // Parses next token
@@ -217,4 +221,52 @@ Expression* Parser::parseInfixExpression(Expression* left){
     nextToken();
     expression->right = parseExpression(precedence);
     return expression;
+}
+
+// Parses a boolean expresion
+Expression* Parser::parseBoolean(){
+    return new Boolean(currentToken, curTokenIs(TokenType::TRUE));
+}
+
+// Parses expression within parenthesis
+Expression* Parser::parseGroupedExpression(){
+    nextToken();
+    Expression* exp = parseExpression(LOWEST);
+    if(!expectPeek(TokenType::RPAREN))
+        return nullptr;
+    return exp;
+}
+
+// Parses an IfExpression returning an IfExpression*
+Expression* Parser::parseIfExpression(){
+    IfExpression* ifExpr = new IfExpression(currentToken);
+    if(!expectPeek(TokenType::LPAREN))
+        return nullptr;
+
+    nextToken(); // get past LPAREN to first expression within
+    ifExpr->condition = parseExpression(LOWEST);
+
+    if(!expectPeek(TokenType::RPAREN))
+        return nullptr;
+
+    if(!expectPeek(TokenType::LBRACE))
+        return nullptr;
+
+    ifExpr->consequence = parseBlockStatement();
+
+    return ifExpr;
+}
+
+// parses a whole block of code typically in if else
+BlockStatement* Parser::parseBlockStatement(){
+    BlockStatement* block = new BlockStatement(currentToken);
+    nextToken(); // to move off '{'
+    while( !curTokenIs(TokenType::RBRACE) && !curTokenIs(TokenType::ENDOFFILE)){
+        Statement* stmt = parseStatement();
+        if(stmt != nullptr){
+            block->statements.push_back(stmt);
+        }
+        nextToken();
+    }
+    return block;
 }

@@ -189,3 +189,55 @@ std::string InfixExpression::toString(){
     output += ")";
     return output;
 }
+
+//constructor
+Boolean::Boolean(Token token, bool value){
+    this->token = token;
+    this->value = value;
+}
+
+// override expression node
+void Boolean::expressionNode() {};
+
+std::string Boolean::toString() {
+    return token.literal;
+}
+
+// destructor
+IfExpression::~IfExpression(){
+    delete condition;
+    delete consequence;
+    if(alternative)
+        delete alternative;
+}
+
+// prints out if as a string
+std::string IfExpression::toString() {
+    std::string output = "if";
+    output += condition->toString();
+    output += " ";
+    output += consequence->toString();
+    if(alternative != nullptr){
+        output += " else " + alternative->toString();
+    }
+    return output;
+}
+
+// overrides expressionNode from expression
+void IfExpression::expressionNode(){};
+
+// destructor deletes all the Statement* within the block statement
+BlockStatement::~BlockStatement(){
+    for(Statement* stmt: statements){
+        delete stmt;
+    }
+}
+
+// turns Block statment into a string
+std::string BlockStatement::toString(){
+    std::string output = "";
+    for(Statement* s : statements){
+        output += s->toString() + "\n";
+    }
+    return output;
+}
