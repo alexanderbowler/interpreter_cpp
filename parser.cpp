@@ -254,6 +254,15 @@ Expression* Parser::parseIfExpression(){
 
     ifExpr->consequence = parseBlockStatement();
 
+    if(peekTokenIs(TokenType::ELSE)){ // there is an else portion
+        nextToken();
+        
+        if(!expectPeek(TokenType::LBRACE))
+            return nullptr;
+
+        ifExpr->alternative = parseBlockStatement();
+    }
+
     return ifExpr;
 }
 

@@ -739,8 +739,6 @@ TEST(ParserTests, TestIfElseExpression){
             catch(const std::bad_cast& e){
                 ADD_FAILURE() << "alternative.statements[0] is not an ExpressionStatement. Dynamic Cast Failed.\n";
             }
-            if(exp->alternative != nullptr)
-                ADD_FAILURE() << "ifexpression.alternative is not nullptr.";
         }
         catch(const std::bad_cast& e){
             ADD_FAILURE() << "stmt.exp is not a IfExpression. Dynamic cast failed\n";
