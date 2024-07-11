@@ -2,6 +2,11 @@
 
 #include "parser.h"
 
+// defualt constructor for Parser initiation
+Parser::Parser(){
+    lexer = nullptr;
+}
+
 // default constructor for Parser
 Parser::Parser(Lexer* lexer){
     this->lexer = lexer;

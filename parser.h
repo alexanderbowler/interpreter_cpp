@@ -35,7 +35,10 @@ class Parser {
     typedef Expression* (Parser::*prefixParseFnPtr)();
     typedef Expression* (Parser::*infixParseFnPtr)(Expression*);
     public:
-    // default constructor for Parser
+        //default constructor for Parser
+        Parser();
+
+        // lexer constructor for Parser
         Parser(Lexer* lexer);
 
         // Parses next token
@@ -126,11 +129,13 @@ class Parser {
         // parses the arguments in a function call and adds them to the vector within callExpressiopn
         void parseCallArguments(CallExpression* callExpression); 
 
+
+        std::vector<std::string> errors;
+
     private:
         Lexer* lexer;
         Token currentToken;
         Token peekToken;
-        std::vector<std::string> errors;
         std::unordered_map<TokenType, prefixParseFnPtr> prefixParseFns;
         std::unordered_map<TokenType, infixParseFnPtr> infixParseFns;
 };

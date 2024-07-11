@@ -36,13 +36,16 @@ class Expression : public Node {
 class Statement : public Node {
     public: 
         // destructor for Statement deletes the expression value
-        ~Statement(){ delete expressionValue;}
+        ~Statement(){ 
+            if(expressionValue)
+                delete expressionValue;
+        }
 
         virtual void statementNode() = 0; //TODO: not used might be needed for inhertiance may be able to get rid of
 
         // vars
         //Token token; from node
-        Expression* expressionValue; // Almost all statements need expression values so we include this here
+        Expression* expressionValue = nullptr; // Almost all statements need expression values so we include this here
                                     // expression values represent the expression attached to the statement for returns and lets
 };
 
@@ -97,7 +100,10 @@ class LetStatement : public Statement {
     LetStatement();
 
     // destructor
-    ~LetStatement(){ delete name;} // don't need to delete value as thats taken care of by base class destructor
+    ~LetStatement(){ 
+        if(name)
+            delete name;
+    } // don't need to delete value as thats taken care of by base class destructor
 
     // Setting the token constructor
     LetStatement(Token token);
@@ -111,7 +117,7 @@ class LetStatement : public Statement {
 
     // vars
     //Token token; from node always LET
-    Identifier* name;
+    Identifier* name = nullptr;
     //Expression* value; from statement
 };
 
@@ -195,7 +201,7 @@ class PrefixExpression: public Expression{
     //vars
     // Token token from node
     std::string op;
-    Expression* right;
+    Expression* right = nullptr;
 };
 
 // Expression Node which holds an infix expression like 5+5, has the operator, and left and right expression pointers
@@ -216,8 +222,8 @@ class InfixExpression: public Expression{
     //vars
     // Token token; from node
     std::string op;
-    Expression* left; // expression pointer to the left
-    Expression* right; // expression pointer to the right
+    Expression* left = nullptr; // expression pointer to the left
+    Expression* right = nullptr; // expression pointer to the right
 };
 
 // Expression node which holds a boolean expression, like integerLiteral but for bools, just holds bool value
@@ -272,9 +278,9 @@ class IfExpression: public Expression{
     std::string toString() override;
 
     //vars
-    Expression* condition;
-    BlockStatement* consequence;
-    BlockStatement* alternative;
+    Expression* condition = nullptr;
+    BlockStatement* consequence = nullptr;
+    BlockStatement* alternative = nullptr;
 };
 
 // Expression Node which holds a function including its token, parameters, and body
@@ -285,7 +291,8 @@ class FunctionLiteral: public Expression{
 
     // destructor
     ~FunctionLiteral(){
-        delete body;
+        if(body)
+            delete body;
         for(Identifier* param:parameters)
             delete param;
     }
@@ -299,7 +306,7 @@ class FunctionLiteral: public Expression{
     //vars
     // Token token; from node
     std::vector<Identifier*> parameters;
-    BlockStatement* body;
+    BlockStatement* body = nullptr;
 };
 
 // Expression Node which holds the calling of a function occurs when we see '(' and preceded by a 
@@ -314,7 +321,8 @@ class CallExpression: public Expression {
 
     // destructor
     ~CallExpression(){
-        delete function;
+        if(function)
+            delete function;
         for(Expression* argument: arguments)
             delete argument;
     }
@@ -327,7 +335,7 @@ class CallExpression: public Expression {
 
     //vars 
     // token; from node, is '(' 
-    Expression* function; // expression * to preceding function
+    Expression* function = nullptr; // expression * to preceding function
     std::vector<Expression*> arguments; // arguments to the function
 };
 

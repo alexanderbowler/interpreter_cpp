@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include "lexer.h"
+#include "parser.h"
 
 
 
@@ -24,6 +25,7 @@ class REPL {
 
         std::string input;
         Lexer lexer;
+        Parser parser;
 };
 
 

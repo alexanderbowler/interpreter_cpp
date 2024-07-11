@@ -159,7 +159,8 @@ PrefixExpression::PrefixExpression(Token token, std::string op){
 
 // prefix destructor
 PrefixExpression::~PrefixExpression(){
-    delete right;
+    if(right)
+        delete right;
 }
 
 // constructor with token, operator, and left expression
@@ -171,8 +172,10 @@ InfixExpression::InfixExpression(Token token, std::string op, Expression* left){
 
 // infix destructor
 InfixExpression::~InfixExpression(){
-    delete left;
-    delete right;
+    if(left)
+        delete left;
+    if(right)
+        delete right;
 }
 
 // expression node override
@@ -205,8 +208,10 @@ std::string Boolean::toString() {
 
 // destructor
 IfExpression::~IfExpression(){
-    delete condition;
-    delete consequence;
+    if(condition)
+        delete condition;
+    if(consequence)
+        delete consequence;
     if(alternative)
         delete alternative;
 }
@@ -237,7 +242,7 @@ BlockStatement::~BlockStatement(){
 std::string BlockStatement::toString(){
     std::string output = "";
     for(Statement* s : statements){
-        output += s->toString() + "\n";
+        output += s->toString();
     }
     return output;
 }
@@ -247,8 +252,10 @@ std::string FunctionLiteral::toString(){
     std::string output = "";
     output += tokenLiteral();
     output += "(";
-    for(Identifier* param: parameters){
-        output += param->toString() + ", ";
+    for(size_t i = 0; i < parameters.size(); i++){
+        output += parameters[i]->toString() ;
+        if(i+1<parameters.size())
+        output += ", ";
     }
     output += ")";
     output += body->toString();
