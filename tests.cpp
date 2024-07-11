@@ -525,6 +525,18 @@ TEST(ParserTests, OperatorPrecedenceTest){
 			"!(true == true)",
 			"(! (true == true))",
 		},
+        {
+			"a + add(b * c) + d",
+			"((a + add((b * c))) + d)",
+		},
+		{
+			"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+		},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
     };
     for( int i = 0; i < 22; i++){
         Lexer lexer = Lexer(infixTests[i].input);
@@ -837,5 +849,82 @@ TEST(ParserTests, TestFunctionParameterParsing){
             ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
         }
     
+    }
+}
+
+TEST(ParserTests, TestCallExpressionParsing){
+    std::string input = "add(1, 2*3, 4+5)";
+   Lexer* l = new Lexer(input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1) 
+    << "ERROR MSG: Program.statements does not contain 1 statements got=" << program->statements.size();
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            CallExpression* exp = dynamic_cast<CallExpression*>(stmt->expressionValue);
+
+            if(!testIdentifier(exp->function, "add"))
+                return;
+            
+            ASSERT_EQ(exp->arguments.size(), 3) << "Expected CallExpression->arguments.size() to be 3. got=" << exp->arguments.size();
+
+            TestLiteralExpression(exp->arguments[0])(1);
+            std::variant<int, std::string, bool> a = 2, b = 3, c = 4, d = 5;
+            testInfixExpression(exp->arguments[1], a, "*", b);
+            testInfixExpression(exp->arguments[2], c, "+", d);
+
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "stmt.exp is not a CallExpression. Dynamic cast failed\n";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
+    }
+}
+
+TEST(ParserTests, TestCallExpressionParameterParsing){
+    struct {
+        std::string input;
+        std::string expectedIdent;
+        std::vector<std::string> expectedArgs;
+    } callExpressionTests[] = {
+        {"add();", "add", std::vector<std::string>{}},
+        {"add(1);", "add", std::vector<std::string>{"1"}},
+        {"add(1, 2 * 3, 4 + 5);", "add", std::vector<std::string>{"1", "(2 * 3)", "(4 + 5)"}},
+    };
+
+	for(auto test:callExpressionTests) {
+		Lexer* l = new Lexer(test.input);
+		Parser p = Parser(l);
+		Program* program = p.parseProgram();
+		checkParserErrors(p);
+
+		try{
+            ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+            try{
+                CallExpression* exp = dynamic_cast<CallExpression*>(stmt->expressionValue);
+
+                if(!testIdentifier(exp->function, test.expectedIdent))
+                    return;
+                
+                ASSERT_EQ(exp->arguments.size(), test.expectedArgs.size()) << "Expected CallExpression->arguments.size() to be" <<test.expectedArgs.size()<<". got=" << exp->arguments.size();
+
+                for(size_t i = 0; i < test.expectedArgs.size(); i++){
+                    EXPECT_EQ(exp->arguments[i]->toString(), test.expectedArgs[i]) << "Expected: "<<test.expectedArgs[i]<<" got: " << exp->arguments[i]->toString();
+                }
+
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "stmt.exp is not a CallExpression. Dynamic cast failed\n";
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
+        }
     }
 }

@@ -282,6 +282,14 @@ class FunctionLiteral: public Expression{
     public:
     // Token constructor
     FunctionLiteral(Token token){this->token = token;};
+
+    // destructor
+    ~FunctionLiteral(){
+        delete body;
+        for(Identifier* param:parameters)
+            delete param;
+    }
+
     // returns a string of the function literal properly formated 
     std::string toString();
 
@@ -296,8 +304,20 @@ class FunctionLiteral: public Expression{
 
 // Expression Node which holds the calling of a function occurs when we see '(' and preceded by a 
 // identifier or function literal
-class CallExpression{
+class CallExpression: public Expression {
     public:
+    // constructor for call Expression
+    CallExpression(Token token, Expression* function){
+        this->token = token;
+        this->function = function;
+    }
+
+    // destructor
+    ~CallExpression(){
+        delete function;
+        for(Expression* argument: arguments)
+            delete argument;
+    }
     
     // override expressionNode
     void expressionNode(){};
@@ -308,7 +328,7 @@ class CallExpression{
     //vars 
     // token; from node, is '(' 
     Expression* function; // expression * to preceding function
-    vector<Expression*> arguments; // arguments to the function
-}
+    std::vector<Expression*> arguments; // arguments to the function
+};
 
 #endif // AST_H

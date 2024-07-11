@@ -28,7 +28,8 @@ class Parser {
         {TokenType::PLUS, SUM},
         {TokenType::MINUS, SUM},
         {TokenType::SLASH, PRODUCT},
-        {TokenType::ASTERISK, PRODUCT}        
+        {TokenType::ASTERISK, PRODUCT},
+        {TokenType::LPAREN, CALL}        
     };
 
     typedef Expression* (Parser::*prefixParseFnPtr)();
@@ -53,7 +54,7 @@ class Parser {
         // Parses a return statement and returns a statement pointer
         Statement* parseReturnStatement();
 
-        // Checks if peek token is what we expect and advances the token if so
+        // Checks if peek token is what we expect and advances the token if so and throws errors if not
         bool expectPeek(TokenType type);
 
         // Checks if the current token is a certain type
@@ -118,6 +119,12 @@ class Parser {
 
         // parses the function parameters and puts them into the functionLiteral object
         void parseFunctionParameters(FunctionLiteral* fnLit);
+
+        // parses a function call expression used as an infix parser when a '(' is infix
+        Expression* parseCallExpression(Expression* function);
+
+        // parses the arguments in a function call and adds them to the vector within callExpressiopn
+        void parseCallArguments(CallExpression* callExpression); 
 
     private:
         Lexer* lexer;

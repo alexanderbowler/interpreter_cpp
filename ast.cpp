@@ -258,7 +258,7 @@ std::string FunctionLiteral::toString(){
 // to string for printing 
 std::string CallExpression::toString(){
     std::string output = "";
-    ouput += function->toString() + "(";
+    output += function->toString() + "(";
     for(Expression* argument: arguments){
         output += argument->toString();
     }

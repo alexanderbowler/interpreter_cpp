@@ -27,6 +27,7 @@ Parser::Parser(Lexer* lexer){
     registerPrefix(TokenType::LPAREN, &Parser::parseGroupedExpression);
     registerPrefix(TokenType::IF, &Parser::parseIfExpression);
     registerPrefix(TokenType::FUNCTION, &Parser::parseFunctionLiteral);
+    registerInfix(TokenType::LPAREN, &Parser::parseCallExpression);
 }
 
 // Parses next token
@@ -314,5 +315,33 @@ void Parser::parseFunctionParameters(FunctionLiteral* fnLit){
     }
 
     if(!expectPeek(TokenType::RPAREN)) //failure if no RParen
+        return;
+}
+
+// parses a function call expression used as an infix parser when a '(' is infix
+Expression* Parser::parseCallExpression(Expression* function){
+    CallExpression* callExpr = new CallExpression(currentToken, function);
+    parseCallArguments(callExpr);
+    return callExpr;
+
+}
+
+// parses the arguments in a function call and adds them to the vector within callExpressiopn
+void Parser::parseCallArguments(CallExpression* callExpression){
+    if(peekTokenIs(TokenType::RPAREN))
+    {
+        nextToken();
+        return;
+    }
+    nextToken();
+    callExpression->arguments.push_back(parseExpression(LOWEST));
+
+    while(peekTokenIs(TokenType::COMMA)){
+        nextToken();
+        nextToken();
+        callExpression->arguments.push_back(parseExpression(LOWEST));
+    }
+
+    if(!expectPeek(TokenType::RPAREN))
         return;
 }
