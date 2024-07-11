@@ -700,7 +700,7 @@ TEST(ParserTests, TestIfExpression){
 }
 
 TEST(ParserTests, TestIfElseExpression){
-     struct {
+    struct {
         std::string input;
         std::variant<int, std::string, bool> leftValue;
         std::string operation;
@@ -746,5 +746,96 @@ TEST(ParserTests, TestIfElseExpression){
     }
     catch(const std::bad_cast& e){
         ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
+    }
+}
+
+TEST(ParserTests, TestFunctionLiteralParsing){
+    struct {
+        std::string input;
+        std::vector<std::string> parameters;
+        std::variant<int, std::string, bool> left;
+        std::string operation;
+        std::variant<int, std::string, bool> right;
+    } fnTests[] = {
+        {"fn(x, y) {x + y;}", std::vector<std::string>{"x", "y"}, "x", "+", "y"},
+    };
+    Lexer* l = new Lexer(fnTests[0].input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_EQ(program->statements.size(), 1) 
+    << "ERROR MSG: Program.statements does not contain 1 statements got=" << program->statements.size();
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            FunctionLiteral* exp = dynamic_cast<FunctionLiteral*>(stmt->expressionValue);
+
+            ASSERT_EQ(exp->parameters.size(), 2) << "FunctionLiteral.parameters is not 2 parameters. got="<< exp->parameters.size()<<"\n";
+
+            for(size_t i = 0; i < fnTests[0].parameters.size(); i++){
+                if(!testIdentifier(exp->parameters[i], fnTests[0].parameters[i]))
+                    return;
+            }
+
+            ASSERT_EQ(exp->body->statements.size(), 1) << "function.body.statements not size 1. got="<<exp->body->statements.size();
+
+            try{
+                ExpressionStatement* bodyStmt = dynamic_cast<ExpressionStatement*>(exp->body->statements[0]);
+                if(!testInfixExpression(bodyStmt->expressionValue, fnTests[0].left, fnTests[0].operation, fnTests[0].right))
+                    return;
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "exp->body->statements is not expressionStatement. Dynamic Cast Failed.\n";
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "stmt.exp is not a FunctionLiteral. Dynamic cast failed\n";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
+    }
+}
+TEST(ParserTests, TestFunctionParameterParsing){
+    struct {
+        std::string input;
+        std::vector<std::string> parameters;
+    } fnTests[] = {
+        {"fn() {};", std::vector<std::string>{}},
+        {"fn(x) {};", std::vector<std::string>{"x"}},
+        {"fn(x, y) {};", std::vector<std::string>{"x", "y"}},
+    };
+
+    for(auto fnTest:fnTests){
+        Lexer* l = new Lexer(fnTest.input);
+        Parser p = Parser(l);
+        Program* program = p.parseProgram();
+        checkParserErrors(p);
+
+        ASSERT_EQ(program->statements.size(), 1) 
+        << "ERROR MSG: Program.statements does not contain 1 statements got=" << program->statements.size();
+
+        try{
+            ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+            try{
+                FunctionLiteral* exp = dynamic_cast<FunctionLiteral*>(stmt->expressionValue);
+
+                ASSERT_EQ(exp->parameters.size(), fnTest.parameters.size()) << "FunctionLiteral.parameters is not "<< fnTest.parameters.size()<<" parameters. got="<< exp->parameters.size()<<"\n";
+
+                for(size_t i = 0; i < fnTest.parameters.size(); i++){
+                    if(!testIdentifier(exp->parameters[i], fnTest.parameters[i]))
+                        return;
+                }
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "stmt.exp is not a FunctionLiteral. Dynamic cast failed\n";
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
+        }
+    
     }
 }

@@ -277,6 +277,38 @@ class IfExpression: public Expression{
     BlockStatement* alternative;
 };
 
+// Expression Node which holds a function including its token, parameters, and body
+class FunctionLiteral: public Expression{
+    public:
+    // Token constructor
+    FunctionLiteral(Token token){this->token = token;};
+    // returns a string of the function literal properly formated 
+    std::string toString();
 
+    // override expressionNode
+    void expressionNode(){};
+
+    //vars
+    // Token token; from node
+    std::vector<Identifier*> parameters;
+    BlockStatement* body;
+};
+
+// Expression Node which holds the calling of a function occurs when we see '(' and preceded by a 
+// identifier or function literal
+class CallExpression{
+    public:
+    
+    // override expressionNode
+    void expressionNode(){};
+
+    // to string for printing 
+    std::string toString();
+
+    //vars 
+    // token; from node, is '(' 
+    Expression* function; // expression * to preceding function
+    vector<Expression*> arguments; // arguments to the function
+}
 
 #endif // AST_H

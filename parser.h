@@ -113,6 +113,12 @@ class Parser {
         // parses a whole block of code typically in if else
         BlockStatement* parseBlockStatement();
 
+        // parses a function literal expression like fn(x,y)={x+y;}
+        Expression* parseFunctionLiteral();
+
+        // parses the function parameters and puts them into the functionLiteral object
+        void parseFunctionParameters(FunctionLiteral* fnLit);
+
     private:
         Lexer* lexer;
         Token currentToken;

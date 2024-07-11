@@ -26,6 +26,7 @@ Parser::Parser(Lexer* lexer){
     registerPrefix(TokenType::FALSE, &Parser::parseBoolean);
     registerPrefix(TokenType::LPAREN, &Parser::parseGroupedExpression);
     registerPrefix(TokenType::IF, &Parser::parseIfExpression);
+    registerPrefix(TokenType::FUNCTION, &Parser::parseFunctionLiteral);
 }
 
 // Parses next token
@@ -256,7 +257,7 @@ Expression* Parser::parseIfExpression(){
 
     if(peekTokenIs(TokenType::ELSE)){ // there is an else portion
         nextToken();
-        
+
         if(!expectPeek(TokenType::LBRACE))
             return nullptr;
 
@@ -278,4 +279,40 @@ BlockStatement* Parser::parseBlockStatement(){
         nextToken();
     }
     return block;
+}
+
+// parses a function literal expression like fn(x,y)={x+y;}
+Expression* Parser::parseFunctionLiteral(){
+    FunctionLiteral* fnLiteral = new FunctionLiteral(currentToken);
+    if(!expectPeek(TokenType::LPAREN))
+        return nullptr;
+
+    parseFunctionParameters(fnLiteral); // parses parameters and puts them into parameter vector
+
+    if(!expectPeek(TokenType::LBRACE))
+        return nullptr;
+
+    fnLiteral->body = parseBlockStatement();
+    return fnLiteral;
+}
+
+// parses the function parameters and puts them into the functionLiteral object
+void Parser::parseFunctionParameters(FunctionLiteral* fnLit){
+    if(peekTokenIs(TokenType::RPAREN)){   // check if no params 
+        nextToken(); // move to RPAREN then return
+        return;
+    }
+    nextToken(); // move off '(' or to next param from , 
+    Identifier* ident = new Identifier(currentToken, currentToken.literal);
+    fnLit->parameters.push_back(ident);
+
+    while(peekTokenIs(TokenType::COMMA)){
+        nextToken();
+        nextToken();
+        Identifier* ident = new Identifier(currentToken, currentToken.literal);
+        fnLit->parameters.push_back(ident);
+    }
+
+    if(!expectPeek(TokenType::RPAREN)) //failure if no RParen
+        return;
 }

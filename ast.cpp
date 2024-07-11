@@ -241,3 +241,27 @@ std::string BlockStatement::toString(){
     }
     return output;
 }
+
+// returns a string of the function literal properly formated 
+std::string FunctionLiteral::toString(){
+    std::string output = "";
+    output += tokenLiteral();
+    output += "(";
+    for(Identifier* param: parameters){
+        output += param->toString() + ", ";
+    }
+    output += ")";
+    output += body->toString();
+    return output;
+}
+
+// to string for printing 
+std::string CallExpression::toString(){
+    std::string output = "";
+    ouput += function->toString() + "(";
+    for(Expression* argument: arguments){
+        output += argument->toString();
+    }
+    output += ")";
+    return output;
+}
