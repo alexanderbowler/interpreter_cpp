@@ -27,7 +27,11 @@ void REPL::start(){
             printParserErrors(parser);
             continue;
         }
-        std::cout<<program->toString()<<std::endl;
+
+        Object* evaluated = Eval(program);
+        if(evaluated){
+            std::cout<<evaluated->inspect()<<"\n";
+        }
     }
 }
 

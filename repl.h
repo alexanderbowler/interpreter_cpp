@@ -7,7 +7,8 @@
 #include <string>
 #include "lexer.h"
 #include "parser.h"
-
+#include "object.h"
+#include "evaluator.h"
 
 
 class REPL {

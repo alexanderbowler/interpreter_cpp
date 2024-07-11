@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 #include "lexer.h"
 #include "parser.h"
+#include "object.h"
 #include <string>
 #include <variant>
+#include "evaluator.h"
 
 using namespace std;
 
@@ -40,7 +42,7 @@ class TestLiteralExpression {
     }
 };
 
-// Tests for the Lexer
+//// TESTS FOR THE LEXER:{
 TEST(LexerTests, BasicTokenTest) {
     string input = "=+(){},;";
     ExpectedToken tests[9] = {
@@ -65,11 +67,11 @@ TEST(LexerTests, BasicTokenTest) {
 
 TEST(LexerTests, BasicCodeTest) {
     string input = "let five = 5;\n \
-let ten = 10;\n \
-let add = fn(x, y) {\n \
-x + y;\n \
-};\n \
-let result = add(five, ten);\n";
+    let ten = 10;\n \
+    let add = fn(x, y) {\n \
+    x + y;\n \
+    };\n \
+    let result = add(five, ten);\n";
     ExpectedToken tests[37] = {
         {TokenType::LET, "let"},
         {TokenType::IDENT, "five"},
@@ -120,25 +122,25 @@ let result = add(five, ten);\n";
 
 TEST(LexerTests, SpecialSymbolsAndKeywordsTest) {
     string input = "let five = 5;\
-let ten = 10;\
-\
-let add = fn(x, y) {\
-  x + y;\
-};\
-\
-let result = add(five, ten);\
-!-/*5;\
-5 < 10 > 5;\
-\
-if (5 < 10) { \
-	return true; \
-} else { \
-	return false; \
-}\
-\
-10 == 10;\
-10 != 9;\
-";
+    let ten = 10;\
+    \
+    let add = fn(x, y) {\
+    x + y;\
+    };\
+    \
+    let result = add(five, ten);\
+    !-/*5;\
+    5 < 10 > 5;\
+    \
+    if (5 < 10) { \
+        return true; \
+    } else { \
+        return false; \
+    }\
+    \
+    10 == 10;\
+    10 != 9;\
+    ";
     ExpectedToken tests[74] = {
         {TokenType::LET, "let"},
         {TokenType::IDENT, "five"},
@@ -224,7 +226,8 @@ if (5 < 10) { \
     }
 }
 
-// Tests for the Parser
+
+// PARSER TESTS:
 TEST(ParserTests, LetStatementsTest) {
     struct {
         std::string input;
@@ -310,7 +313,7 @@ bool testLetStatement(Statement* s, string name){
     return true;
 }
 
-// Parser Test Helper Function implementations
+// parse helper functions
 bool testReturnStatement(Statement* s){
     if(s->tokenLiteral() != "return"){
         ADD_FAILURE() << "ERROR MSG: s.tokenLiteral not 'return'. got=" << s->tokenLiteral();
@@ -617,8 +620,6 @@ bool testBooleanLiteral(Expression* exp, bool value){
 }
 
 
-
-
 // four overloaded functions
 template <typename leftType, typename rightType>
 bool testInfixExpression(Expression* exp, leftType left, std::string op, rightType right){
@@ -638,8 +639,6 @@ bool testInfixExpression(Expression* exp, leftType left, std::string op, rightTy
     }
     return true;
 }
-
-
 
 TEST(ParserTests, BooleanExpressionTests){
    struct {
@@ -940,5 +939,99 @@ TEST(ParserTests, TestCallExpressionParameterParsing){
         catch(const std::bad_cast& e){
             ADD_FAILURE() << "program.statement[0] is not ExpressionStatement. Dynamic cast failed\n";
         }
+    }
+}
+
+// Evaluator helper functions:
+Object* testEval(std::string& input){
+    Lexer l = Lexer(input);
+    Parser p = Parser(&l);
+    Program* program = p.parseProgram();
+
+    return Eval(program);
+}
+bool testIntegerObject(Object* obj, int expectedVal){
+    if(!obj)
+        ADD_FAILURE() << "Object* is nullptr";
+    try{
+        Integer* obj_int = dynamic_cast<Integer*>(obj);
+        if(obj_int->value != expectedVal){
+            ADD_FAILURE() << "Expected Integer->value to be "<<expectedVal<<". got="<<obj_int->value;
+            return false;
+        }
+        if(obj_int)
+            delete obj_int;
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Object* is not Integer*. Dynamic cast failed";
+        return false;
+    }
+    return true;
+}
+
+bool testBooleanObject(Object* obj, bool expectedVal){
+    if(!obj)
+        ADD_FAILURE() << "Object* is nullptr";
+    try{
+        BooleanObj* bool_obj = dynamic_cast<BooleanObj*>(obj);
+        if(bool_obj->value != expectedVal){
+            ADD_FAILURE() <<"Expected BooleanObj->value to be "<<expectedVal<<". got="<<bool_obj->value;
+            return false;
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Object* is not BooleanObj*. Dynamic cast failed";
+        return false;
+    }
+    return true;
+}
+
+
+// EVALUATOR TESTS:
+TEST(EvaluatorTests, TestIntegerExpression){
+    struct {
+        std::string input;
+        int expectedValue;
+    } tests[] = {
+        {"5", 5},
+        {"10", 10},
+        {"-5", -5},
+        {"-10", -10}
+    };
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        testIntegerObject(evaluated, test.expectedValue);
+    }
+}
+
+TEST(EvaluatorTests, TestBooleanExpression){
+    struct {
+        std::string input;
+        bool expectedValue;
+    } tests[] = {
+        {"true", true},
+        {"false", false},
+    };
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        testBooleanObject(evaluated, test.expectedValue);
+    }
+}
+
+TEST(EvaluatorTests, TestBangOperator){
+    struct {
+        std::string input;
+        bool expectedValue;
+    } tests[] = {
+        {"!true", false},
+        {"!false", true},
+        {"!5", false},
+        {"!!true", true},
+        {"!!false", false},
+        {"!!5", true},
+    };
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        testBooleanObject(evaluated, test.expectedValue);
     }
 }

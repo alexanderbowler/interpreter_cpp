@@ -24,6 +24,10 @@ add_executable(
     ast.cpp
     parser.h
     parser.cpp
+    object.h
+    object.cpp
+    evaluator.h
+    evaluator.cpp
     tests.cpp
 
 )
