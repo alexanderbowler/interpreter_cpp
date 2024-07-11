@@ -33,6 +33,12 @@ Object* Eval(Node* node){
         Object* right = Eval(prefixExp->right);
         return evalPrefixExpression(prefixExp->op, right);
     }
+    else if(node_type == typeid(InfixExpression)){
+        InfixExpression* infixExp = dynamic_cast<InfixExpression*>(node);
+        Object* left = Eval(infixExp->left);
+        Object* right = Eval(infixExp->right);
+        return evalInfixExpression(infixExp->op, left, right);
+    }
 
     return nullptr;
 
@@ -95,4 +101,48 @@ Object* evalMinusPrefixOperator(Object* operand){
     else{
         return &NULLOBJ;
     }
+}
+
+// helper function to evaluate infix statements and return their value
+Object* evalInfixExpression(std::string op, Object* left, Object* right){
+    const std::type_info& left_type = typeid(*left);
+    const std::type_info& right_type = typeid(*right);
+    if(left_type == typeid(Integer) && right_type == typeid(Integer)){
+        Integer* left_int = dynamic_cast<Integer*>(left);
+        Integer* right_int = dynamic_cast<Integer*>(right);
+        return evalIntegerInfixExpression(op, left_int, right_int);
+    }
+    else if(op == "=="){
+        return nativeBoolToBooleanObject(left == right);
+    }
+    else if(op == "!="){
+        return nativeBoolToBooleanObject(left != right);
+    }
+    else
+        return &NULLOBJ;
+
+}
+
+// helper function to evaluate infix statements of two integers
+Object* evalIntegerInfixExpression(std::string op, Integer* left_int, Integer* right_int){
+    int left_val = left_int->value;
+    int right_val = right_int->value;
+    if(op == "+")
+        return new Integer(left_val+right_val);
+    else if(op == "-")
+        return new Integer(left_val-right_val);
+    else if(op == "*")
+        return new Integer(left_val*right_val);
+    else if(op == "/")
+        return new Integer(left_val/right_val);
+    else if(op == "<")
+        return nativeBoolToBooleanObject(left_val<right_val);
+    else if(op == ">")
+        return nativeBoolToBooleanObject(left_val>right_val);
+    else if(op == "==")
+        return nativeBoolToBooleanObject(left_val==right_val);
+    else if(op == "!=")
+        return nativeBoolToBooleanObject(left_val!=right_val);
+    else
+        return &NULLOBJ;
 }

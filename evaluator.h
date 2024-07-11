@@ -27,4 +27,10 @@ Object* evalBangOperator(Object* operand);
 // helper function which applies the - operand to negate a number 
 Object* evalMinusPrefixOperator(Object* operand);
 
+// helper function to evaluate infix statements and return their value
+Object* evalInfixExpression(std::string op, Object* left, Object* right);
+
+// helper function to evaluate infix statements of two integers
+Object* evalIntegerInfixExpression(std::string op, Integer* left_int, Integer* right_int);
+
 #endif
