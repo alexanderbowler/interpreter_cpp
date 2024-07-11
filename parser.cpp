@@ -64,10 +64,12 @@ Statement* Parser::parseStatement(){
 Statement* Parser::parseReturnStatement(){
     ReturnStatement* stmt = new ReturnStatement(currentToken);
     nextToken();
-    // TODO: implement logic for parsing expressions
-    while(!curTokenIs(TokenType::SEMICOLON)){
+    
+    stmt->expressionValue = parseExpression(LOWEST);
+
+    if(peekTokenIs(TokenType::SEMICOLON))
         nextToken();
-    }
+
     return stmt;
 }
 
@@ -83,10 +85,13 @@ Statement* Parser::parseLetStatement(){
         delete stmt;
         return nullptr; // error handling for if improper let statement
     } 
-    // TODO: skipping the experssions until get to semicolon
-    while(!curTokenIs(TokenType::SEMICOLON)){
+    
+    nextToken();
+    stmt->expressionValue = parseExpression(LOWEST);
+
+    if(peekTokenIs(TokenType::SEMICOLON))
         nextToken();
-    }
+
     return stmt;
 }
 

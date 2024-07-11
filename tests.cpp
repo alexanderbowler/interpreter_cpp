@@ -18,8 +18,27 @@ bool testReturnStatement(Statement* s);
 bool testIntegerLiteral(Expression* expression, int value);
 template <typename leftType, typename rightType>
 bool testInfixExpression(Expression* exp, leftType left, std::string op, rightType right);
+bool testIdentifier(Expression* exp, std::string value);
+bool testBooleanLiteral(Expression* exp, bool value);
 
+//helper class
+class TestLiteralExpression {
+    Expression* exp;
+    public:
+    // Constructor
+    TestLiteralExpression(Expression* exp): exp(exp) {}
 
+    bool operator()(int value) const {
+        return testIntegerLiteral(exp, value);
+    }
+
+    bool operator()(const std::string& value) const {
+        return testIdentifier(exp, value);
+    }
+    bool operator()(const bool value) const {
+        return testBooleanLiteral(exp, value);
+    }
+};
 
 // Tests for the Lexer
 TEST(LexerTests, BasicTokenTest) {
@@ -207,50 +226,61 @@ if (5 < 10) { \
 
 // Tests for the Parser
 TEST(ParserTests, LetStatementsTest) {
-    string input = "let x =  5;\
-    let y = 10;\
-    let foobar = 838383;";
+    struct {
+        std::string input;
+        std::string expectedIdentifier;
+        std::variant<int, std::string, bool> expectedValue;
+    } letTests[] = {
+        {"let x = 5;", "x", 5},
+        {"let y = true", "y", true},
+        {"let foobar = y;", "foobar", "y"}
+    };
 
-    Lexer lexer = Lexer(input);
-    Parser parser = Parser(&lexer);
+    for(auto test: letTests){
+        Lexer lexer = Lexer(test.input);
+        Parser parser = Parser(&lexer);
 
-    Program* program = parser.parseProgram();
-    checkParserErrors(parser);
-    ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+        Program* program = parser.parseProgram();
+        checkParserErrors(parser);
+        ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
 
-    ASSERT_EQ(program->statements.size(), 3) 
-    << "ERROR MSG: Program.statements does not contain 3 statements got=" << program->statements.size();
-
-    vector<string> expectedIdentifiers = {"x", "y", "foobar"};
-
-    for(int i = 0; i < 3; i++){
-        Statement* stmt = program->statements[i];
-        if(testLetStatement(stmt, expectedIdentifiers[i]) == false){
+        ASSERT_EQ(program->statements.size(), 1) 
+        << "ERROR MSG: Program.statements does not contain 3 statements got=" << program->statements.size();
+        
+        if(!testLetStatement(program->statements[0], test.expectedIdentifier))
             return;
-        }
+
+        if(!std::visit(TestLiteralExpression(program->statements[0]->expressionValue), test.expectedValue))
+            return;
     }
 }
 
 TEST(ParserTests, ReturnStatementsTest) {
-    string input = "return 5;\
-    return 10;\
-    return add(10);";
+    struct {
+        std::string input;
+        std::variant<int, std::string, bool> expectedValue;
+    } returnTests[] = {
+        {"return 5;", 5},
+        {"return true;", true},
+        {"return foobar;", "foobar"}
+    };
+    for(auto test: returnTests){
+        Lexer lexer = Lexer(test.input);
+        Parser parser = Parser(&lexer);
 
-    Lexer lexer = Lexer(input);
-    Parser parser = Parser(&lexer);
+        Program* program = parser.parseProgram();
+        checkParserErrors(parser);
+        ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
 
-    Program* program = parser.parseProgram();
-    checkParserErrors(parser);
-    ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+        ASSERT_EQ(program->statements.size(), 1) 
+        << "ERROR MSG: Program.statements does not contain 1 statement got=" << program->statements.size();
 
-    ASSERT_EQ(program->statements.size(), 3) 
-    << "ERROR MSG: Program.statements does not contain 3 statements got=" << program->statements.size();
-
-    for(int i = 0; i < 3; i++){
-        Statement* stmt = program->statements[i];
-        if(testReturnStatement(stmt) == false){
+        if(!testReturnStatement(program->statements[0]))
             return;
-        }
+        
+        if(!std::visit(TestLiteralExpression(program->statements[0]->expressionValue), test.expectedValue))
+            return;
+
     }
 }
 
@@ -586,23 +616,7 @@ bool testBooleanLiteral(Expression* exp, bool value){
     }
 }
 
-class TestLiteralExpression {
-    Expression* exp;
-    public:
-    // Constructor
-    TestLiteralExpression(Expression* exp): exp(exp) {}
 
-    bool operator()(int value) const {
-        return testIntegerLiteral(exp, value);
-    }
-
-    bool operator()(const std::string& value) const {
-        return testIdentifier(exp, value);
-    }
-    bool operator()(const bool value) const {
-        return testBooleanLiteral(exp, value);
-    }
-};
 
 
 // four overloaded functions
