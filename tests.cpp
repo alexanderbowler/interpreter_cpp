@@ -986,6 +986,27 @@ bool testBooleanObject(Object* obj, bool expectedVal){
     return true;
 }
 
+bool testNullObject(Object* obj){
+    try{
+        Null* nullObj = dynamic_cast<Null*>(obj);
+        Null* nulltrue = &NULLOBJ;
+        std::cout<<obj->inspect()<<NULLOBJ.inspect();
+
+        if(obj->inspect() != NULLOBJ.inspect()){
+            ADD_FAILURE() <<"object is not NULL";
+            return false;
+        }
+        cout<<"here";
+        return true;
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() <<"object is not NULL";
+        return false;
+    }
+    
+    return true;
+}
+
 
 // EVALUATOR TESTS:
 TEST(EvaluatorTests, TestIntegerExpression){
@@ -1061,5 +1082,112 @@ TEST(EvaluatorTests, TestBangOperator){
     for(auto test: tests){
         Object* evaluated = testEval(test.input);
         testBooleanObject(evaluated, test.expectedValue);
+    }
+}
+
+TEST(EvaluatorTests, TestIfElseExpression){
+    struct {
+        std::string input;
+        int expectedValue;
+    } tests[] = {
+        {"if (true) { 10 }", 10},
+        {"if (false) { 10 }", -1}, // -1 is a just a flag for nullptr in these test cases
+       {"if (1) { 10 }", 10},
+       {"if (1 < 2) { 10 }", 10},
+       {"if (1 > 2) { 10 }", -1},
+       {"if (1 > 2) { 10 } else { 20 }", 20},
+       {"if (1 < 2) { 10 } else { 20 }", 10},
+    };
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        
+        if(test.expectedValue == -1){
+            testNullObject(evaluated);
+        }
+        else{
+            try{
+                Integer* eval_int = dynamic_cast<Integer*>(evaluated);
+                EXPECT_EQ(test.expectedValue, eval_int->value) << "IfElse value not "<<test.expectedValue<<". got=" << eval_int->value;
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() << "Object* is not an Integer*. Dynamic Cast failed.";
+            }
+        }
+    }
+}
+
+TEST(EvaluatorTests, TestReturnStatements){
+    struct {
+        std::string input;
+        int expectedValue;
+    } tests[] = {
+        {"return 10;", 10},
+        {"return 10; 9;", 10},
+        {"return 2 * 5; 9;", 10},
+        {"9; return 2 * 5; 9;", 10},
+        {"if (10 > 1){\
+        if(10>1){\
+        return 10;}\
+        return 1;}", 10},
+        
+    };
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        testIntegerObject(evaluated, test.expectedValue);
+    }
+}
+
+TEST(EvaluatorTests, TestErrorHandling){
+    struct {
+        std::string input;
+        std::string expectedMessage;
+    } tests[] = {
+        {
+            "5 + true;",
+            "type mismatch: INTEGER + BOOLEAN",
+        },
+        {
+            "5 + true; 5;",
+            "type mismatch: INTEGER + BOOLEAN",
+        },
+        {
+            "-true",
+            "unknown operator: -BOOLEAN",
+        },
+        {
+            "true + false;",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        },
+        {
+            "5; true + false; 5",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        },
+        {
+            "if (10 > 1) { true + false; }",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        },
+        {
+            "\
+            if (10 > 1) {\
+            if (10 > 1) {\
+                return true + false;\
+            }\
+            \
+            return 1;\
+            }\
+            ",
+            "unknown operator: BOOLEAN + BOOLEAN",
+        },
+    };
+        
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        try{
+            Error* errorObj = dynamic_cast<Error*>(evaluated);
+            EXPECT_EQ(errorObj->message, test.expectedMessage) << "wrong error message returned. expected="<<test.expectedMessage;
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "no error object deteced. Dynamic cast failed";
+        }
     }
 }

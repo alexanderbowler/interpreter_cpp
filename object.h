@@ -9,6 +9,8 @@ enum class ObjectType : uint8_t {
     INTEGER_OBJ,
     BOOLEAN_OBJ,
     NULL_OBJ,
+    RETURN_VALUE_OBJ,
+    ERROR_OBJ,
 };
 
 class Object {
@@ -56,6 +58,36 @@ class Null: public Object {
 
     // returns the object type of this particular object INTEGER
     ObjectType type() override;
+};
+
+class ReturnValue: public Object {
+    public:
+        //constructor
+        ReturnValue(Object* obj): value(obj){}
+
+        // returns the value of the intger as a string
+        std::string inspect() override;
+
+        // returns the object type of this particular object from value
+        ObjectType type() override;
+    
+    //vars
+    Object* value;
+};
+
+class Error: public Object{
+    public:
+        //constructor
+        Error(std::string& msg):  message(msg){}
+
+        // returns the value of the intger as a string
+        std::string inspect() override;
+
+        // returns the object type of this particular object ERROR
+        ObjectType type() override;
+    
+    //vars
+    std::string message;
 };
 
 #endif

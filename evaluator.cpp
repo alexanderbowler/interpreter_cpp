@@ -12,7 +12,7 @@ Object* Eval(Node* node){
     //statements
     if(node_type == typeid(Program)){
         Program* program = dynamic_cast<Program*>(node);
-        return evalStatements(program->statements);
+        return evalProgram(program->statements);
     }
     else if(node_type == typeid(ExpressionStatement)){
         ExpressionStatement* expStmt = dynamic_cast<ExpressionStatement*>(node);
@@ -31,24 +31,56 @@ Object* Eval(Node* node){
     else if(node_type == typeid(PrefixExpression)){
         PrefixExpression* prefixExp = dynamic_cast<PrefixExpression*>(node);
         Object* right = Eval(prefixExp->right);
+        if(isError(right))
+            return right;
         return evalPrefixExpression(prefixExp->op, right);
     }
     else if(node_type == typeid(InfixExpression)){
         InfixExpression* infixExp = dynamic_cast<InfixExpression*>(node);
         Object* left = Eval(infixExp->left);
+        if(isError(left))
+            return left;
+
         Object* right = Eval(infixExp->right);
+        if(isError(right))
+            return right;
+
         return evalInfixExpression(infixExp->op, left, right);
+    }
+    else if(node_type == typeid(BlockStatement)){
+        BlockStatement* block = dynamic_cast<BlockStatement*>(node);
+        return evalBlockStatement(block->statements);
+    }
+    else if(node_type == typeid(IfExpression)){
+        IfExpression* ifExp = dynamic_cast<IfExpression*>(node);
+        return evalIfExpression(ifExp);
+    }
+    else if(node_type == typeid(ReturnStatement)){
+        ReturnStatement* returnStmt = dynamic_cast<ReturnStatement*>(node);
+        Object* result = Eval(returnStmt->expressionValue);
+        if(isError(result))
+            return result;
+
+        return new ReturnValue(result);
     }
 
     return nullptr;
 
 }
 
-Object* evalStatements(std::vector<Statement*>& stmts){
+Object* evalProgram(std::vector<Statement*>& stmts){
     Object* result = nullptr;
     for(Statement* stmt: stmts){
         result = Eval(stmt);
+
+        if(result != nullptr && typeid(*result) == typeid(ReturnValue)){
+            ReturnValue* returnVal = dynamic_cast<ReturnValue*>(result);
+            return returnVal->value;
+        }
+        if(typeid(*result) == typeid(Error))
+            return result;
     }
+
     return result;
 }
 
@@ -67,8 +99,9 @@ Object* evalPrefixExpression(std::string op, Object* operand){
     else if(op == "-"){
         return evalMinusPrefixOperator(operand);
     }
-    else
-        return &NULLOBJ;
+    else{
+        return newError("unknown operator: " + op + " " + ObjectTypeToString[operand->type()]);
+    }
 }
 
 // helper function which applies the ! to the operand
@@ -99,7 +132,7 @@ Object* evalMinusPrefixOperator(Object* operand){
         return new Integer(-val);
     }
     else{
-        return &NULLOBJ;
+        return newError("unknown operator: -"+ObjectTypeToString[operand->type()]);
     }
 }
 
@@ -112,6 +145,10 @@ Object* evalInfixExpression(std::string op, Object* left, Object* right){
         Integer* right_int = dynamic_cast<Integer*>(right);
         return evalIntegerInfixExpression(op, left_int, right_int);
     }
+    else if(left_type != right_type){
+        return newError("type mismatch: " + ObjectTypeToString[left->type()] +
+        " " + op + " " + ObjectTypeToString[right->type()]);
+    }
     else if(op == "=="){
         return nativeBoolToBooleanObject(left == right);
     }
@@ -119,7 +156,8 @@ Object* evalInfixExpression(std::string op, Object* left, Object* right){
         return nativeBoolToBooleanObject(left != right);
     }
     else
-        return &NULLOBJ;
+        return newError("unknown operator: " + ObjectTypeToString[left->type()] +
+        " " + op + " " + ObjectTypeToString[right->type()]);
 
 }
 
@@ -144,5 +182,61 @@ Object* evalIntegerInfixExpression(std::string op, Integer* left_int, Integer* r
     else if(op == "!=")
         return nativeBoolToBooleanObject(left_val!=right_val);
     else
+        return newError("unknown operator: " + ObjectTypeToString[left_int->type()] + " "
+        + op + " " + ObjectTypeToString[right_int->type()]);
+}
+
+// helper function to evaluate if expressions 
+Object* evalIfExpression(IfExpression* exp){
+    Object* condition = Eval(exp->condition);
+    if(isError(condition))
+        return condition;
+    if(isTruthy(condition)){
+        return Eval(exp->consequence);
+    }
+    else if(exp->alternative != nullptr)
+        return Eval(exp->alternative);
+    else {
         return &NULLOBJ;
+
+    }
+}
+
+// helper function to tell if a condition is truthy or not
+bool isTruthy(Object* obj){
+    if(obj == &NULLOBJ)
+        return false;
+    else if(obj == &TRUE)
+        return true;
+    else if(obj == &FALSE)
+        return false;
+    else
+        return true;
+}
+
+// helper function to evaluate a block of statements taking care of returns
+Object* evalBlockStatement(std::vector<Statement*>& stmts){
+    Object* result = nullptr;
+    for(Statement* stmt: stmts){
+        result = Eval(stmt);
+
+        if(result != nullptr && (typeid(*result) == typeid(ReturnValue) || typeid(*result) == typeid(Error))){
+            return result;
+        }
+    }
+
+    return result;
+}
+
+// helper function for creating error objects
+Error* newError(std::string message){
+    return new Error(message);
+}
+
+// helper function to check if an object is an error
+bool isError(Object* obj){
+    if(obj != nullptr)
+        return obj->type() == ObjectType::ERROR_OBJ;
+        
+    return false;
 }

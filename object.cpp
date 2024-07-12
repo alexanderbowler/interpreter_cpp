@@ -33,3 +33,23 @@ std::string Null::inspect(){
 ObjectType Null::type() {
     return ObjectType::NULL_OBJ;
 }
+
+// returns the value of the intger as a string
+std::string ReturnValue::inspect(){
+    return value->inspect();
+}
+
+// returns the object type of this particular object INTEGER
+ObjectType ReturnValue::type() {
+    return ObjectType::RETURN_VALUE_OBJ;
+}
+
+// returns the value of the intger as a string
+std::string Error::inspect() {
+    return "ERROR: " + message;
+}
+
+// returns the object type of this particular object ERROR
+ObjectType Error::type() {
+    return ObjectType::ERROR_OBJ;
+}
