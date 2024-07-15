@@ -4,6 +4,10 @@
 #define OBJECT_H
 
 #include <string>
+#include "ast.h"
+
+// forward declaration of Environment class
+class Environment;
 
 enum class ObjectType : uint8_t {
     INTEGER_OBJ,
@@ -11,6 +15,7 @@ enum class ObjectType : uint8_t {
     NULL_OBJ,
     RETURN_VALUE_OBJ,
     ERROR_OBJ,
+    FUNCTION_OBJ,
 };
 
 class Object {
@@ -88,6 +93,24 @@ class Error: public Object{
     
     //vars
     std::string message;
+};
+
+class Function: public Object{
+    public:
+    //constructor
+    Function(std::vector<Identifier*>& params, BlockStatement* bod, Environment* e): 
+    parameters(params), body(bod), env(e){}
+
+    // returns the value of the intger as a string
+    std::string inspect() override;
+
+    // returns the object type of this particular object FUNCTION_OBJ
+    ObjectType type() override;
+
+    //vars
+    std::vector<Identifier*> parameters;
+    BlockStatement* body;
+    Environment* env;
 };
 
 #endif

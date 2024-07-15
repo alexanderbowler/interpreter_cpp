@@ -5,6 +5,7 @@
 #include <string>
 #include <variant>
 #include "evaluator.h"
+#include "environment.h"
 
 using namespace std;
 
@@ -944,13 +945,15 @@ TEST(ParserTests, TestCallExpressionParameterParsing){
 
 // Evaluator helper functions:
 Object* testEval(std::string& input){
+    std::cout<<"here";
     Lexer l = Lexer(input);
     Parser p = Parser(&l);
     Program* program = p.parseProgram();
-
-    return Eval(program);
+    Environment env = Environment();
+    return Eval(program, &env);
 }
 bool testIntegerObject(Object* obj, int expectedVal){
+    std::cout<<"here";
     if(!obj)
         ADD_FAILURE() << "Object* is nullptr";
     try{
@@ -1178,16 +1181,82 @@ TEST(EvaluatorTests, TestErrorHandling){
             ",
             "unknown operator: BOOLEAN + BOOLEAN",
         },
+        {
+            "foobar",
+            "identifier not found: foobar"
+        },
     };
         
     for(auto test: tests){
         Object* evaluated = testEval(test.input);
         try{
             Error* errorObj = dynamic_cast<Error*>(evaluated);
-            EXPECT_EQ(errorObj->message, test.expectedMessage) << "wrong error message returned. expected="<<test.expectedMessage;
+            EXPECT_EQ(errorObj->message, test.expectedMessage) << "wrong error message returned. expected=\""<<test.expectedMessage<<"\"";
         }
         catch(const std::bad_cast& e){
             ADD_FAILURE() << "no error object deteced. Dynamic cast failed";
         }
     }
+}
+
+TEST(EvaluatorTests, TestLetStatements){
+    struct {
+        std::string input;
+        int expectedValue;
+    } tests[] = {
+        {"let a = 5; 5;", 5},
+        {"let a = 5 * 5; a;", 25},
+        {"let a = 5; let b = a; b;", 5},
+        {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+    };
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        testIntegerObject(evaluated, test.expectedValue);
+    }
+}
+
+TEST(EvaluatorTests, FunctionObject){
+    std::string input = "fn(x) { x+2; };";
+
+    Object* evaluated = testEval(input);
+    try{
+        Function* funcObj = dynamic_cast<Function*>(evaluated);
+        ASSERT_EQ(funcObj->parameters.size(), 1) << "function has wrong parameters, expected 1. got="<<funcObj->parameters.size();
+        EXPECT_EQ(funcObj->parameters[0]->toString(), "x") << "parameter is not 'x'. got=" << funcObj->parameters[0]->toString();
+        std::string expectedBody = "(x + 2)";
+        EXPECT_EQ(funcObj->body->toString(), expectedBody) << "body is not "<< expectedBody <<". got=" <<funcObj->body->toString();
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Object is not Function object. Dynamic Cast failed";
+    }
+}
+
+TEST(EvaluatorTests, FunctionApplication){
+    struct {
+        std::string input;
+        int expected;
+    } tests[] = {
+        {"let identity = fn(x) { x; }; identity(5);", 5},
+        {"let identity = fn(x) { return x; }; identity(5);", 5},
+        {"let double = fn(x) { x * 2; }; double(5);", 10},
+        {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+        {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+        {"fn(x) { x; }(5)", 5},
+    };
+
+    for(auto test:tests){
+        testIntegerObject(testEval(test.input), test.expected);
+    }
+}
+
+TEST(EvaluatorTests, TestClosures) {
+    std::string input = "\
+let newAdder = fn(x) {\
+  fn(y) { x + y };\
+};\
+\
+let addTwo = newAdder(2);\
+addTwo(2);";
+
+    testIntegerObject(testEval(input), 4);
 }

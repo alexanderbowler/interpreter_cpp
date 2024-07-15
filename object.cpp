@@ -53,3 +53,23 @@ std::string Error::inspect() {
 ObjectType Error::type() {
     return ObjectType::ERROR_OBJ;
 }
+
+ // returns the value of the intger as a string
+std::string Function::inspect()  {
+    std::string output = "fn(";
+    for(size_t i = 0; i < parameters.size(); i++){
+        output += parameters[i]->toString();
+        if(i+1 < parameters.size())
+            output += ",";
+    }
+    output += ") {\n";
+    output+= body->toString();
+    output += "\n}";
+
+    return output;
+}
+
+// returns the object type of this particular object FUNCTION_OBJ
+ObjectType Function::type() {
+    return ObjectType::FUNCTION_OBJ;
+}

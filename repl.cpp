@@ -13,6 +13,8 @@ REPL::REPL(){
 // Start the REPL
 // EFFECTS:  starts the REPL
 void REPL::start(){
+    Environment env = Environment();
+
     while(true){
         std::cout << PROMPT;
         std::string input;
@@ -28,7 +30,7 @@ void REPL::start(){
             continue;
         }
 
-        Object* evaluated = Eval(program);
+        Object* evaluated = Eval(program, &env);
         if(evaluated){
             std::cout<<evaluated->inspect()<<"\n";
         }

@@ -5,18 +5,18 @@
 #include <typeinfo>
 #include <iostream>
 
-Object* Eval(Node* node){
+Object* Eval(Node* node, Environment* env){
     const std::type_info& node_type = typeid(*node);
     // if-else switch statement
     
     //statements
     if(node_type == typeid(Program)){
         Program* program = dynamic_cast<Program*>(node);
-        return evalProgram(program->statements);
+        return evalProgram(program->statements, env);
     }
     else if(node_type == typeid(ExpressionStatement)){
         ExpressionStatement* expStmt = dynamic_cast<ExpressionStatement*>(node);
-        return Eval(expStmt->expressionValue);
+        return Eval(expStmt->expressionValue, env);
     }
     //expressions
     else if(node_type == typeid(IntegerLiteral)){
@@ -30,18 +30,18 @@ Object* Eval(Node* node){
     }
     else if(node_type == typeid(PrefixExpression)){
         PrefixExpression* prefixExp = dynamic_cast<PrefixExpression*>(node);
-        Object* right = Eval(prefixExp->right);
+        Object* right = Eval(prefixExp->right, env);
         if(isError(right))
             return right;
         return evalPrefixExpression(prefixExp->op, right);
     }
     else if(node_type == typeid(InfixExpression)){
         InfixExpression* infixExp = dynamic_cast<InfixExpression*>(node);
-        Object* left = Eval(infixExp->left);
+        Object* left = Eval(infixExp->left, env);
         if(isError(left))
             return left;
 
-        Object* right = Eval(infixExp->right);
+        Object* right = Eval(infixExp->right, env);
         if(isError(right))
             return right;
 
@@ -49,35 +49,62 @@ Object* Eval(Node* node){
     }
     else if(node_type == typeid(BlockStatement)){
         BlockStatement* block = dynamic_cast<BlockStatement*>(node);
-        return evalBlockStatement(block->statements);
+        return evalBlockStatement(block->statements, env);
     }
     else if(node_type == typeid(IfExpression)){
         IfExpression* ifExp = dynamic_cast<IfExpression*>(node);
-        return evalIfExpression(ifExp);
+        return evalIfExpression(ifExp, env);
     }
     else if(node_type == typeid(ReturnStatement)){
         ReturnStatement* returnStmt = dynamic_cast<ReturnStatement*>(node);
-        Object* result = Eval(returnStmt->expressionValue);
+        Object* result = Eval(returnStmt->expressionValue, env);
         if(isError(result))
             return result;
 
         return new ReturnValue(result);
     }
+    else if(node_type == typeid(LetStatement)){
+        LetStatement* letStmt = dynamic_cast<LetStatement*>(node);
+        Object* val = Eval(letStmt->expressionValue, env);
+        if(isError(val))
+            return val;
+        env->set(letStmt->name->value, val);
 
+    }
+    else if(node_type == typeid(Identifier)){
+        Identifier* ident = dynamic_cast<Identifier*>(node);
+        return evalIdentifier(ident, env);
+    }
+    else if(node_type == typeid(FunctionLiteral)){
+        FunctionLiteral* funcLit = dynamic_cast<FunctionLiteral*>(node);
+        return new Function(funcLit->parameters, funcLit->body, env);
+    }
+    else if(node_type == typeid(CallExpression)){
+        CallExpression* callExp = dynamic_cast<CallExpression*>(node);
+        Object* function = Eval(callExp->function, env);
+        if(isError(function))
+            return function;
+        
+        std::vector<Object*> args = evalExpressions(callExp->arguments, env);
+        if(args.size() == 1 && isError(args[0]))
+            return args[0];
+        
+        return applyFunction(function, args);
+    }
     return nullptr;
 
 }
 
-Object* evalProgram(std::vector<Statement*>& stmts){
+Object* evalProgram(std::vector<Statement*>& stmts, Environment* env){
     Object* result = nullptr;
     for(Statement* stmt: stmts){
-        result = Eval(stmt);
+        result = Eval(stmt, env);
 
         if(result != nullptr && typeid(*result) == typeid(ReturnValue)){
             ReturnValue* returnVal = dynamic_cast<ReturnValue*>(result);
             return returnVal->value;
         }
-        if(typeid(*result) == typeid(Error))
+        if(result != nullptr && typeid(*result) == typeid(Error))
             return result;
     }
 
@@ -187,15 +214,15 @@ Object* evalIntegerInfixExpression(std::string op, Integer* left_int, Integer* r
 }
 
 // helper function to evaluate if expressions 
-Object* evalIfExpression(IfExpression* exp){
-    Object* condition = Eval(exp->condition);
+Object* evalIfExpression(IfExpression* exp, Environment* env){
+    Object* condition = Eval(exp->condition, env);
     if(isError(condition))
         return condition;
     if(isTruthy(condition)){
-        return Eval(exp->consequence);
+        return Eval(exp->consequence, env);
     }
     else if(exp->alternative != nullptr)
-        return Eval(exp->alternative);
+        return Eval(exp->alternative, env);
     else {
         return &NULLOBJ;
 
@@ -215,10 +242,10 @@ bool isTruthy(Object* obj){
 }
 
 // helper function to evaluate a block of statements taking care of returns
-Object* evalBlockStatement(std::vector<Statement*>& stmts){
+Object* evalBlockStatement(std::vector<Statement*>& stmts, Environment* env){
     Object* result = nullptr;
     for(Statement* stmt: stmts){
-        result = Eval(stmt);
+        result = Eval(stmt, env);
 
         if(result != nullptr && (typeid(*result) == typeid(ReturnValue) || typeid(*result) == typeid(Error))){
             return result;
@@ -239,4 +266,59 @@ bool isError(Object* obj){
         return obj->type() == ObjectType::ERROR_OBJ;
         
     return false;
+}
+
+// helper function which returns the value of an identifier through the enviroment
+Object* evalIdentifier(Identifier* ident, Environment* env){
+    Object* val = env->get(ident->value);
+    if(val == nullptr){
+        return newError("identifier not found: " + ident->value);
+    }
+    return val;
+}
+
+// helper function to evaluate the value of parameters before passing them to functions
+std::vector<Object*> evalExpressions(std::vector<Expression*>& params, Environment* env){
+    std::vector<Object*> result;
+    for(Expression* param: params){
+        Object* evaluated = Eval(param, env);
+        if(isError(evaluated)){
+            std::vector<Object*> err = {evaluated};
+            return err;
+        }
+        result.push_back(evaluated);
+    }
+    return result;
+}
+
+// helper function which evaluates the function body of a func given its parameters
+Object* applyFunction(Object* uncast_function, std::vector<Object*>& args){
+    try{
+        Function* func = dynamic_cast<Function*>(uncast_function);
+        Environment* extendedEnv = extendFunctionEnv(func, args);
+        Object* evaluated = Eval(func->body, extendedEnv);
+        return unwrapReturnValue(evaluated);
+    }
+    catch(const std::bad_cast& e){
+        return newError("Apply function on not a function");
+    }
+}
+
+// takes in a function* and uses the enviroment to create a new extended enviroment with proper
+// params passed through and returns that
+Environment* extendFunctionEnv(Function* func, std::vector<Object*> args){
+    Environment* extendedEnv = new Environment(func->env);
+    for(size_t i = 0; i < func->parameters.size(); i++){
+        extendedEnv->set(func->parameters[i]->value, args[i]);
+    }
+    return extendedEnv;
+}
+
+// helper function which unwraps the return value for function evaluation
+Object* unwrapReturnValue(Object* evaluated){
+    if(typeid(*evaluated) == typeid(ReturnValue)){
+        ReturnValue* returnVal = dynamic_cast<ReturnValue*>(evaluated);
+        return returnVal->value;
+    }
+        return evaluated;
 }

@@ -29,6 +29,8 @@ add_executable(
     evaluator.h
     evaluator.cpp
     tests.cpp
+    environment.h
+    environment.cpp
 
 )
 
