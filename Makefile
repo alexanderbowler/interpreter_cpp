@@ -43,3 +43,10 @@ final: CXXFLAGS += -o3
 final:
 	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(EXECUTABLE)
 .PHONY: debug
+
+# make valgrind - will compile sources with $(CXXFLAGS) -g3 suitable for
+#                 CAEN or WSL (DOES NOT WORK ON MACOS).
+valgrind: CXXFLAGS += -g3
+valgrind:
+	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(EXECUTABLE)_valgrind
+.PHONY: valgrind

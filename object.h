@@ -70,6 +70,10 @@ class ReturnValue: public Object {
         //constructor
         ReturnValue(Object* obj): value(obj){}
 
+        // destructor
+        ~ReturnValue(){
+        }
+
         // returns the value of the intger as a string
         std::string inspect() override;
 
@@ -100,6 +104,11 @@ class Function: public Object{
     //constructor
     Function(std::vector<Identifier*>& params, BlockStatement* bod, Environment* e): 
     parameters(params), body(bod), env(e){}
+
+    // destructor
+    ~Function(){
+        delete body;
+    }
 
     // returns the value of the intger as a string
     std::string inspect() override;

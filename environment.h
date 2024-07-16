@@ -12,6 +12,12 @@ class Environment {
             outer = nullptr;
             store = std::unordered_map<std::string, Object*>();
         }
+
+        // destructor
+        ~Environment(){
+            if(outer)
+                delete outer;
+        }
         
         // constructor for inner enclosed enviroment which specifies an environment pointer
         // to the outer environment
