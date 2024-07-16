@@ -83,3 +83,13 @@ std::string String::inspect() {
 ObjectType String::type() {
     return ObjectType::STRING_OBJ;
 }
+
+// returns the value of the function as a string
+std::string Builtin::inspect() {
+    return "builtin function";
+}
+
+// returns the object type of this particular object BUILTIN_OBJ
+ObjectType Builtin::type() {
+    return ObjectType::BUILTIN_OBJ;
+}

@@ -35,6 +35,8 @@ enum class TokenType : uint8_t {
     IF,
     ELSE,
     STRING,
+    LBRACKET,
+    RBRACKET,
 };
 
 
@@ -73,7 +75,8 @@ class Lexer{
             {TokenType::TRUE, "TRUE"},
             {TokenType::RETURN, "RETURN"},
             {TokenType::IF, "IF"},
-            {TokenType::ELSE, "ELSE"}};
+            {TokenType::ELSE, "ELSE"},
+            };
 
         // Lexer constructor
         // REQUIRES: input is a string

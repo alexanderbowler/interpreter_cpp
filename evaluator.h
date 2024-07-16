@@ -19,6 +19,13 @@ static std::unordered_map<ObjectType, std::string> ObjectTypeToString = {
     {ObjectType::STRING_OBJ, "STRING"},
 };
 
+// len function wrapper using Object* 
+// REQUIRES:    input[0] be the actual input to the length function
+Object* objectLength(std::vector<Object*> input);
+
+// global map for builtin functions
+extern std::unordered_map<std::string, Builtin*> builtins;
+
 // main evaulator function to evaluate the nodes within the AST
 Object* Eval(Node* node, Environment* env);
 

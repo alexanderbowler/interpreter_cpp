@@ -5,6 +5,10 @@
 #include <typeinfo>
 #include <iostream>
 
+std::unordered_map<std::string, Builtin*>builtins = {
+    {"len",  new Builtin(&objectLength)}
+};
+
 Object* Eval(Node* node, Environment* env){
     const std::type_info& node_type = typeid(*node);
     // if-else switch statement
@@ -278,8 +282,13 @@ bool isError(Object* obj){
 // helper function which returns the value of an identifier through the enviroment
 Object* evalIdentifier(Identifier* ident, Environment* env){
     Object* val = env->get(ident->value);
-    if(val == nullptr){
-        return newError("identifier not found: " + ident->value);
+    if(val == nullptr){ // not a variable in our environment
+        // first check if its a builtin func name
+        auto funcIt = builtins.find(ident->value);
+        if(funcIt == builtins.end()) //not a builtin function
+            return newError("identifier not found: " + ident->value);
+        else // is a builtin function
+            return funcIt->second; // return the Builtin object which has a function pointer to proper func
     }
     return val;
 }
@@ -300,13 +309,18 @@ std::vector<Object*> evalExpressions(std::vector<Expression*>& params, Environme
 
 // helper function which evaluates the function body of a func given its parameters
 Object* applyFunction(Object* uncast_function, std::vector<Object*>& args){
-    try{
+    if(typeid(*uncast_function) == typeid(Function)){
         Function* func = dynamic_cast<Function*>(uncast_function);
         Environment* extendedEnv = extendFunctionEnv(func, args);
         Object* evaluated = Eval(func->body, extendedEnv);
         return unwrapReturnValue(evaluated);
     }
-    catch(const std::bad_cast& e){
+    else if(typeid(*uncast_function) == typeid(Builtin)){
+        Builtin* func = dynamic_cast<Builtin*>(uncast_function);
+        return func->fn(args);
+    }
+    
+    else{
         return newError("Apply function on not a function");
     }
 }
@@ -346,4 +360,16 @@ Object* evalStringInfixExpression(std::string op, Object* left, Object* right){
         + op + " " + ObjectTypeToString[right_str->type()]);
 
     return new String(left_str->value + right_str->value);
+}
+
+Object* objectLength(std::vector<Object*> input){
+    if(input.size() != 1)
+        return newError("wrong number of arguments. expected=1, got=" + std::to_string(input.size()));
+    if(input[0]->type() != ObjectType::STRING_OBJ)
+        return newError("argument to 'len' not supported, got " + ObjectTypeToString[input[0]->type()]);
+    
+    String* inStr = dynamic_cast<String*>(input[0]);
+    size_t length = inStr->value.size();
+    return new Integer((int) length);        
+    
 }

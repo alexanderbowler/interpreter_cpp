@@ -1316,3 +1316,32 @@ TEST(EvaluatorTests, TestStringConcatentation) {
         ADD_FAILURE() << "Object is not String*. Dynamic cast failed";
     }
 }
+
+TEST(EvaluatorTests, TestBuiltinFunctions){
+    struct {
+        std::string input;
+        int expectedVal;
+        std::string expectedError;
+    } tests[] = {
+        {"len(\"\")", 0, ""},
+        {"len(\"four\")", 4, ""},
+        {"len(\"hello world\")", 11, ""},
+        {"len(1)", 0, "argument to 'len' not supported, got INTEGER"},
+        {"len(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
+    };
+
+    for(auto test:tests){
+        Object* evaluated = testEval(test.input);
+        if(test.expectedError != ""){
+            try{
+                Error* err = dynamic_cast<Error*>(evaluated);
+                ASSERT_EQ(err->message, test.expectedError) << "Wrong error message";
+            }
+            catch(const std::bad_cast& e){
+                ADD_FAILURE() <<" expected error type did not get. Dynamic cast failed.";
+            }
+        }
+        else
+            testIntegerObject(evaluated, test.expectedVal);
+    }
+}

@@ -9,6 +9,7 @@
 // forward declaration of Environment class
 class Environment;
 
+
 enum class ObjectType : uint8_t {
     INTEGER_OBJ,
     BOOLEAN_OBJ,
@@ -17,6 +18,7 @@ enum class ObjectType : uint8_t {
     ERROR_OBJ,
     FUNCTION_OBJ,
     STRING_OBJ,
+    BUILTIN_OBJ,
 };
 
 class Object {
@@ -136,6 +138,24 @@ class Function: public Object{
     std::vector<Identifier*> parameters;
     BlockStatement* body;
     Environment* env;
+};
+
+class Builtin: public Object{
+    public:
+    // constructor
+    Builtin(Object* (*inFunc)(std::vector<Object*>)){
+        fn = inFunc;
+    }
+
+    // returns the value of the function as a string
+    std::string inspect() override;
+
+    // returns the object type of this particular object BUILTIN_OBJ
+    ObjectType type() override;
+
+    //vars 
+    Object* (*fn)(std::vector<Object*>); // this is a function pointer outputs an object with input as object is bad!
+
 };
 
 #endif
