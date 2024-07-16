@@ -183,6 +183,28 @@ class IntegerLiteral: public Expression{
     int value; // same as token.literal but as int 
 };
 
+// String Literal node represents the value of a string within an expression
+class StringLiteral: public Expression{
+    public:
+    // Token constructor
+    StringLiteral(Token token, std::string lit){
+        this->token = token;
+        value = lit;
+    }
+
+    // no destrucotr required taken care of by Expression
+
+    // Overriding expressionNode from Expression
+    void expressionNode() override;
+
+    // Overriding toString from Node for printing
+    std::string toString() override;
+
+    //vars
+    // Token token; from node
+    std::string value;
+};
+
 // Expression Node which holds the parts of a prefix expression, holds the operator and the expression to the right
 class PrefixExpression: public Expression{
     public:

@@ -83,6 +83,10 @@ Token Lexer::nextToken(){
         case '\0':
             tok = Token{TokenType::ENDOFFILE, ""};
             break;
+        case '\"':
+            tok.type = TokenType::STRING;
+            tok.literal = readString();
+            break;
         default:
             if(isalpha(ch) || ch == '_'){
                 tok.literal = readIdentifier();
@@ -160,4 +164,15 @@ std::string Lexer::readDigit(){
     while(isdigit(ch))
         readChar();
     return input.substr(initial_position, position-initial_position);
+}
+
+// Reads a string as input and processes to put in as a literal
+std::string Lexer::readString(){
+    size_t beginIndex = position +1;
+    while(true){
+        readChar();
+        if(ch == '\"' || ch == 0)
+            break;
+    }
+    return input.substr(beginIndex, position-beginIndex);
 }

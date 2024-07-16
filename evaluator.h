@@ -16,6 +16,7 @@ static std::unordered_map<ObjectType, std::string> ObjectTypeToString = {
     {ObjectType::NULL_OBJ, "NULL"},
     {ObjectType::RETURN_VALUE_OBJ, "RETURN_VALUE"},
     {ObjectType::ERROR_OBJ, "ERROR"},
+    {ObjectType::STRING_OBJ, "STRING"},
 };
 
 // main evaulator function to evaluate the nodes within the AST
@@ -72,5 +73,8 @@ Environment* extendFunctionEnv(Function* func, std::vector<Object*> args);
 
 // helper function which unwraps the return value for function evaluation
 Object* unwrapReturnValue(Object* evaluated);
+
+// helper function for doing string concatentation
+Object* evalStringInfixExpression(std::string op, Object* left, Object* right);
 
 #endif

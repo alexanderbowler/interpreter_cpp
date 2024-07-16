@@ -129,6 +129,9 @@ class Parser {
         // parses the arguments in a function call and adds them to the vector within callExpressiopn
         void parseCallArguments(CallExpression* callExpression); 
 
+        // parses a string literal
+        Expression* parseStringLiteral();
+
 
         std::vector<std::string> errors;
 

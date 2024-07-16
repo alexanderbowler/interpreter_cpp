@@ -91,6 +91,10 @@ Object* Eval(Node* node, Environment* env){
         
         return applyFunction(function, args);
     }
+    else if(node_type == typeid(StringLiteral)){
+        StringLiteral* str = dynamic_cast<StringLiteral*>(node);
+        return new String(str->value);
+    }
     return nullptr;
 
 }
@@ -171,6 +175,9 @@ Object* evalInfixExpression(std::string op, Object* left, Object* right){
         Integer* left_int = dynamic_cast<Integer*>(left);
         Integer* right_int = dynamic_cast<Integer*>(right);
         return evalIntegerInfixExpression(op, left_int, right_int);
+    }
+    else if(left_type == typeid(String) && right_type == typeid(String)){
+        return evalStringInfixExpression(op, left, right);
     }
     else if(left_type != right_type){
         return newError("type mismatch: " + ObjectTypeToString[left->type()] +
@@ -321,4 +328,22 @@ Object* unwrapReturnValue(Object* evaluated){
         return returnVal->value;
     }
         return evaluated;
+}
+
+// helper function for doing string concatentation
+Object* evalStringInfixExpression(std::string op, Object* left, Object* right){
+    String* left_str = dynamic_cast<String*>(left);
+    String* right_str = dynamic_cast<String*>(right);
+
+    if( op == "==")
+        return nativeBoolToBooleanObject(left_str->value == right_str->value);
+
+    if(op == "!="){
+        return nativeBoolToBooleanObject(left_str->value != right_str->value);
+    }
+    if( op != "+")
+        return newError("unknown operator: " + ObjectTypeToString[left_str->type()]+ " "
+        + op + " " + ObjectTypeToString[right_str->type()]);
+
+    return new String(left_str->value + right_str->value);
 }

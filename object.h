@@ -16,6 +16,7 @@ enum class ObjectType : uint8_t {
     RETURN_VALUE_OBJ,
     ERROR_OBJ,
     FUNCTION_OBJ,
+    STRING_OBJ,
 };
 
 class Object {
@@ -38,6 +39,21 @@ class Integer: public Object {
 
     // vars
         int value;
+};
+
+class String: public Object {
+    public:
+    //constructor
+    String(std::string val): value(val){}
+
+    // returns the value of the string
+    std::string inspect() override;
+
+    // returns the object type of this particular object INTEGER
+    ObjectType type() override;
+
+    // vars
+        std::string value;
 };
 
 class BooleanObj: public Object {

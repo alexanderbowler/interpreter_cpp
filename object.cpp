@@ -73,3 +73,13 @@ std::string Function::inspect()  {
 ObjectType Function::type() {
     return ObjectType::FUNCTION_OBJ;
 }
+
+// returns the value of the string
+std::string String::inspect() {
+    return value;
+}
+
+// returns the object type of this particular object INTEGER
+ObjectType String::type() {
+    return ObjectType::STRING_OBJ;
+}

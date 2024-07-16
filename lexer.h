@@ -33,7 +33,8 @@ enum class TokenType : uint8_t {
     TRUE,
     RETURN,
     IF,
-    ELSE
+    ELSE,
+    STRING,
 };
 
 
@@ -127,6 +128,9 @@ class Lexer{
         // Read digits
         // EFFECTS: reads in digits from the input
         std::string readDigit();
+
+        // Reads a string as input and processes to put in as a literal
+        std::string readString();
         
 };
 

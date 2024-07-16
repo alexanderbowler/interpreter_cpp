@@ -141,8 +141,10 @@ TEST(LexerTests, SpecialSymbolsAndKeywordsTest) {
     \
     10 == 10;\
     10 != 9;\
+    \"foobar\"\
+    \"foo bar\"\
     ";
-    ExpectedToken tests[74] = {
+    ExpectedToken tests[] = {
         {TokenType::LET, "let"},
         {TokenType::IDENT, "five"},
         {TokenType::ASSIGN, "="},
@@ -216,7 +218,9 @@ TEST(LexerTests, SpecialSymbolsAndKeywordsTest) {
         {TokenType::NEQ, "!="},
         {TokenType::INT, "9"},
         {TokenType::SEMICOLON, ";"},
-        {TokenType::ENDOFFILE, ""},     
+        {TokenType::STRING, "foobar"},
+        {TokenType::STRING, "foo bar"},     
+        {TokenType::ENDOFFILE, ""},
     };
 
     Lexer lexer = Lexer(input);
@@ -314,7 +318,7 @@ bool testLetStatement(Statement* s, string name){
     return true;
 }
 
-// parse helper functions
+// parser helper functions
 bool testReturnStatement(Statement* s){
     if(s->tokenLiteral() != "return"){
         ADD_FAILURE() << "ERROR MSG: s.tokenLiteral not 'return'. got=" << s->tokenLiteral();
@@ -341,6 +345,30 @@ void checkParserErrors(Parser& p){
     ADD_FAILURE() << "ERROR MSG: parser has " << errors.size() << " errors";
     for(string error : errors){
         ADD_FAILURE() << "parser error: " << error;
+    }
+}
+
+// parser tests
+TEST(ParserTests, TestStringLiteralExpression){
+    std::string input = "\"hello world\";";
+    Lexer lexer = Lexer(input);
+    Parser parser = Parser(&lexer);
+    Program* program = parser.parseProgram();
+    checkParserErrors(parser);
+    ASSERT_NE(program, nullptr) << "ERROR MSG: ParseProgram() returned nullptr";
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            StringLiteral* lit = dynamic_cast<StringLiteral*>(stmt->expressionValue);
+            ASSERT_EQ(lit->value, "hello world") << "literal.value not \"hello world\". got="<<lit->value;
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "stmt->expressionValue not a string literal. Dynamic cast failed";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Program->stmt[0] not an expression statement. Dynamic cast failed";
     }
 }
 
@@ -945,7 +973,6 @@ TEST(ParserTests, TestCallExpressionParameterParsing){
 
 // Evaluator helper functions:
 Object* testEval(std::string& input){
-    std::cout<<"here";
     Lexer l = Lexer(input);
     Parser p = Parser(&l);
     Program* program = p.parseProgram();
@@ -953,7 +980,6 @@ Object* testEval(std::string& input){
     return Eval(program, &env);
 }
 bool testIntegerObject(Object* obj, int expectedVal){
-    std::cout<<"here";
     if(!obj)
         ADD_FAILURE() << "Object* is nullptr";
     try{
@@ -999,7 +1025,6 @@ bool testNullObject(Object* obj){
             ADD_FAILURE() <<"object is not NULL";
             return false;
         }
-        cout<<"here";
         return true;
     }
     catch(const std::bad_cast& e){
@@ -1063,6 +1088,9 @@ TEST(EvaluatorTests, TestBooleanExpression){
         {"(1 < 2) == false", false},
         {"(1 > 2) == true", false},
         {"(1 > 2) == false", true},
+        {"\"hello\" == \"hello\"", true},
+        {"\"hello\" == \"world\"", false},
+        {"\"hello\" != \"hello\"", false},
     };
     for(auto test: tests){
         Object* evaluated = testEval(test.input);
@@ -1185,6 +1213,10 @@ TEST(EvaluatorTests, TestErrorHandling){
             "foobar",
             "identifier not found: foobar"
         },
+        {
+            "\"Hello\" - \"world\"",
+            "unknown operator: STRING - STRING"
+        },
     };
         
     for(auto test: tests){
@@ -1251,12 +1283,36 @@ TEST(EvaluatorTests, FunctionApplication){
 
 TEST(EvaluatorTests, TestClosures) {
     std::string input = "\
-let newAdder = fn(x) {\
-  fn(y) { x + y };\
-};\
-\
-let addTwo = newAdder(2);\
-addTwo(2);";
+    let newAdder = fn(x) {\
+    fn(y) { x + y };\
+    };\
+    \
+    let addTwo = newAdder(2);\
+    addTwo(2);";
 
     testIntegerObject(testEval(input), 4);
+}
+
+TEST(EvaluatorTests, TestStringLiteral) {
+    std::string input = "\"Hello world!\";";
+    Object* evaluated = testEval(input);
+    try{
+        String* str = dynamic_cast<String*>(evaluated);
+        ASSERT_EQ(str->value, "Hello world!") << "String has wrong value. got=" << str->value;
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Object is not String*. Dynamic cast failed";
+    }
+}
+
+TEST(EvaluatorTests, TestStringConcatentation) {
+    std::string input = "\"Hello\" + \" world!\"";
+    Object* evaluated = testEval(input);
+    try{
+        String* str = dynamic_cast<String*>(evaluated);
+        ASSERT_EQ(str->value, "Hello world!") << "String has wrong value. got=" << str->value;
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Object is not String*. Dynamic cast failed";
+    }
 }

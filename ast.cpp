@@ -272,3 +272,12 @@ std::string CallExpression::toString(){
     output += ")";
     return output;
 }
+
+// Overriding expressionNode from Expression
+void StringLiteral::expressionNode() {
+};
+
+// Overriding toString from Node for printing
+std::string StringLiteral::toString() {
+    return token.literal;
+}

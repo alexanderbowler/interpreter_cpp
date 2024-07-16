@@ -33,6 +33,7 @@ Parser::Parser(Lexer* lexer){
     registerPrefix(TokenType::IF, &Parser::parseIfExpression);
     registerPrefix(TokenType::FUNCTION, &Parser::parseFunctionLiteral);
     registerInfix(TokenType::LPAREN, &Parser::parseCallExpression);
+    registerPrefix(TokenType::STRING, &Parser::parseStringLiteral);
 }
 
 // Parses next token
@@ -354,4 +355,9 @@ void Parser::parseCallArguments(CallExpression* callExpression){
 
     if(!expectPeek(TokenType::RPAREN))
         return;
+}
+
+// parses a string literal
+Expression* Parser::parseStringLiteral(){
+    return new StringLiteral(currentToken, currentToken.literal);
 }
