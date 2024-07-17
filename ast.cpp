@@ -266,8 +266,10 @@ std::string FunctionLiteral::toString(){
 std::string CallExpression::toString(){
     std::string output = "";
     output += function->toString() + "(";
-    for(Expression* argument: arguments){
-        output += argument->toString();
+    for(size_t i = 0; i < arguments.size(); i++){
+        output += arguments[i]->toString();
+        if(i+1 < arguments.size())
+            output += ", "; 
     }
     output += ")";
     return output;
@@ -280,4 +282,31 @@ void StringLiteral::expressionNode() {
 // Overriding toString from Node for printing
 std::string StringLiteral::toString() {
     return token.literal;
+}
+
+// Overriding expressionNode from Expression
+void ArrayLiteral::expressionNode() {
+    
+}
+
+// Overriding toString from Node for printing
+std::string ArrayLiteral::toString() {
+    std::string output = "[";
+    for(size_t i = 0; i < elements.size(); i++){
+        output += elements[i]->toString();
+        if(i+1 < elements.size())
+            output += ", ";
+    }
+    output += "]";
+    return output;
+}
+
+// to string for printing 
+std::string IndexExpression::toString(){
+    std::string output = "(";
+    output += left->toString();
+    output += "[";
+    output += index->toString();
+    output += "])";
+    return output;
 }

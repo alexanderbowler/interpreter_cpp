@@ -76,6 +76,8 @@ class Lexer{
             {TokenType::RETURN, "RETURN"},
             {TokenType::IF, "IF"},
             {TokenType::ELSE, "ELSE"},
+            {TokenType::LBRACKET, "["},
+            {TokenType::RBRACKET, "]"},
             };
 
         // Lexer constructor

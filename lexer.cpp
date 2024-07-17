@@ -87,6 +87,12 @@ Token Lexer::nextToken(){
             tok.type = TokenType::STRING;
             tok.literal = readString();
             break;
+        case '[':
+            tok = Token{TokenType::LBRACKET, "["};
+            break;
+        case ']':
+            tok = Token{TokenType::RBRACKET, "]"};
+            break;
         default:
             if(isalpha(ch) || ch == '_'){
                 tok.literal = readIdentifier();

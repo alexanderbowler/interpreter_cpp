@@ -19,6 +19,7 @@ enum class ObjectType : uint8_t {
     FUNCTION_OBJ,
     STRING_OBJ,
     BUILTIN_OBJ,
+    ARRAY_OBJ,
 };
 
 class Object {
@@ -156,6 +157,21 @@ class Builtin: public Object{
     //vars 
     Object* (*fn)(std::vector<Object*>); // this is a function pointer outputs an object with input as object is bad!
 
+};
+
+class Array: public Object{
+    public:
+    // constructor
+    Array(std::vector<Object*>& ar){elements = ar;};
+
+    // returns the value of the function as a string
+    std::string inspect() override;
+
+    // returns the object type of this particular object BUILTIN_OBJ
+    ObjectType type() override;
+
+    //vars
+    std::vector<Object*> elements;
 };
 
 #endif

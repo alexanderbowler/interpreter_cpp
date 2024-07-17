@@ -84,4 +84,22 @@ Object* unwrapReturnValue(Object* evaluated);
 // helper function for doing string concatentation
 Object* evalStringInfixExpression(std::string op, Object* left, Object* right);
 
+// helper function which checks if its properly an array and integer
+Object* evalIndexExpression(Object* left, Object* index);
+
+// helper which accesses the value of the array 
+Object* evalArrayIndexExpression(Array* left, Integer* index);
+
+// builtin function FIRST for arrays gets the first element of the array
+Object* first(std::vector<Object*> inputs);
+
+// builtin function LAST for arrays gets the last element of the array
+Object* last(std::vector<Object*> inputs);
+
+// builtin function REST for arrays gets a copy of the array with all but first element
+Object* rest(std::vector<Object*> inputs);
+
+// builtin function PUSH for arrays gets a copy of the array and adds desired element to the end
+Object* push(std::vector<Object*> inputs);
+
 #endif

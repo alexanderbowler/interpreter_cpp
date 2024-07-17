@@ -93,3 +93,20 @@ std::string Builtin::inspect() {
 ObjectType Builtin::type() {
     return ObjectType::BUILTIN_OBJ;
 }
+
+// returns the value of the function as a string
+std::string Array::inspect() {
+    std::string output = "[";
+    for(size_t i = 0; i < elements.size(); i++){
+        output += elements[i]->inspect();
+        if(i+1 < elements.size())
+            output += ", ";
+    }
+    output += "]";
+    return output;
+}
+
+// returns the object type of this particular object BUILTIN_OBJ
+ObjectType Array::type() {
+    return ObjectType::ARRAY_OBJ;
+}

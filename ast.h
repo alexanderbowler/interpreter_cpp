@@ -205,6 +205,26 @@ class StringLiteral: public Expression{
     std::string value;
 };
 
+class ArrayLiteral: public Expression{
+    public:
+        //constructor
+        ArrayLiteral(Token tok){
+            token = tok;
+        }
+
+        // destructor none needed as taken care of by vector
+
+        // Overriding expressionNode from Expression
+        void expressionNode() override;
+
+        // Overriding toString from Node for printing
+        std::string toString() override;
+
+        //vars
+        // Token token; from node
+        std::vector<Expression*> elements; // elements of the array
+};
+
 // Expression Node which holds the parts of a prefix expression, holds the operator and the expression to the right
 class PrefixExpression: public Expression{
     public:
@@ -359,6 +379,35 @@ class CallExpression: public Expression {
     // token; from node, is '(' 
     Expression* function = nullptr; // expression * to preceding function
     std::vector<Expression*> arguments; // arguments to the function
+};
+
+class IndexExpression: public Expression{
+     public:
+    // constructor for call Expression
+    IndexExpression(Token token, Expression* left){
+        this->token = token;
+        this->left = left;
+    }
+
+    // destructor
+    ~IndexExpression(){
+        if(left)
+            delete left;
+        if(index)
+            delete index;
+    }
+    
+    // override expressionNode
+    void expressionNode(){};
+
+    // to string for printing 
+    std::string toString();
+
+    //vars 
+    // token; from node, is '(' 
+    Expression* left = nullptr; // expression* left of [
+    Expression* index = nullptr; // expression * right of [
+
 };
 
 #endif // AST_H

@@ -6,7 +6,11 @@
 #include <iostream>
 
 std::unordered_map<std::string, Builtin*>builtins = {
-    {"len",  new Builtin(&objectLength)}
+    {"len",  new Builtin(&objectLength)},
+    {"first", new Builtin(&first)},
+    {"last", new Builtin(&last)},
+    {"rest", new Builtin(&rest)},
+    {"push", new Builtin(&push)}
 };
 
 Object* Eval(Node* node, Environment* env){
@@ -98,6 +102,24 @@ Object* Eval(Node* node, Environment* env){
     else if(node_type == typeid(StringLiteral)){
         StringLiteral* str = dynamic_cast<StringLiteral*>(node);
         return new String(str->value);
+    }
+    else if(node_type == typeid(ArrayLiteral)){
+        ArrayLiteral* ar = dynamic_cast<ArrayLiteral*>(node);
+        std::vector<Object*> elems = evalExpressions(ar->elements, env);
+        if(elems.size() == 1 && isError(elems[0])){
+            return elems[0];
+        }
+        return new Array(elems);
+    }
+    else if(node_type == typeid(IndexExpression)){
+        IndexExpression* indexExp = dynamic_cast<IndexExpression*>(node);
+        Object* left = Eval(indexExp->left, env);
+        if(isError(left))
+            return left;
+        Object* index = Eval(indexExp->index, env);
+        if(isError(index))
+            return index;
+        return evalIndexExpression(left, index);
     }
     return nullptr;
 
@@ -362,14 +384,103 @@ Object* evalStringInfixExpression(std::string op, Object* left, Object* right){
     return new String(left_str->value + right_str->value);
 }
 
+
+// length function for arrays and strings
 Object* objectLength(std::vector<Object*> input){
     if(input.size() != 1)
         return newError("wrong number of arguments. expected=1, got=" + std::to_string(input.size()));
-    if(input[0]->type() != ObjectType::STRING_OBJ)
+    if(input[0]->type() == ObjectType::STRING_OBJ){
+        String* inStr = dynamic_cast<String*>(input[0]);
+        size_t length = inStr->value.size();
+        return new Integer((int) length); 
+    }
+    else if(input[0]->type() == ObjectType::ARRAY_OBJ){
+        Array* ar = dynamic_cast<Array*>(input[0]);
+        size_t length = ar->elements.size();
+        return new Integer((int) length); 
+    }
         return newError("argument to 'len' not supported, got " + ObjectTypeToString[input[0]->type()]);
     
-    String* inStr = dynamic_cast<String*>(input[0]);
-    size_t length = inStr->value.size();
-    return new Integer((int) length);        
+}
+
+// builtin function FIRST for arrays gets the first element of the array
+Object* first(std::vector<Object*> inputs){
+    if(inputs.size() != 1)
+        return newError("wrong number of arguments. expected=1, got=" + std::to_string(inputs.size()));
+    else if(inputs[0]->type() == ObjectType::ARRAY_OBJ){
+        Array* ar = dynamic_cast<Array*>(inputs[0]);
+        if(ar->elements.size() < 1)
+            return &NULLOBJ;
+        return ar->elements[0]; 
+    }
+    else
+        return newError("argument to 'first' must be ARRAY, got " + ObjectTypeToString[inputs[0]->type()]);
     
+}
+
+// builtin function LAST for arrays gets the last element of the array
+Object* last(std::vector<Object*> inputs){
+    if(inputs.size() != 1)
+        return newError("wrong number of arguments. expected=1, got=" + std::to_string(inputs.size()));
+    else if(inputs[0]->type() == ObjectType::ARRAY_OBJ){
+        Array* ar = dynamic_cast<Array*>(inputs[0]);
+        if(ar->elements.size() < 1)
+            return &NULLOBJ;
+        return ar->elements[ar->elements.size()-1]; 
+    }
+    else
+        return newError("argument to 'last' must be ARRAY, got " + ObjectTypeToString[inputs[0]->type()]);
+    
+}
+
+// builtin function REST for arrays gets a copy of the array with all but first element
+Object* rest(std::vector<Object*> inputs){
+    if(inputs.size() != 1)
+        return newError("wrong number of arguments. expected=1, got=" + std::to_string(inputs.size()));
+    else if(inputs[0]->type() == ObjectType::ARRAY_OBJ){
+        Array* ar = dynamic_cast<Array*>(inputs[0]);
+        if(ar->elements.size() < 1)
+            return &NULLOBJ;
+        std::vector<Object*> tail;
+        tail.resize(ar->elements.size()-1);
+        std::copy( ++(ar->elements.begin()), ar->elements.end(), tail.begin());
+        return new Array(tail); 
+    }
+    else
+        return newError("argument to 'rest' must be ARRAY, got " + ObjectTypeToString[inputs[0]->type()]);
+    
+}
+
+// builtin function PUSH for arrays gets a copy of the array and adds desired element to the end
+Object* push(std::vector<Object*> inputs){
+    if(inputs.size() != 2){
+        return newError("wrong number of arguments. expected=2, got=" + std::to_string(inputs.size()));
+    }
+    if(inputs[0]->type() != ObjectType::ARRAY_OBJ){
+        return newError("argument to 'push' must be ARRAY, got " + ObjectTypeToString[inputs[0]->type()]);
+    }
+    Array* ar = dynamic_cast<Array*>(inputs[0]);
+    std::vector<Object*> newAr(ar->elements.begin(), ar->elements.end());
+    newAr.push_back(inputs[1]);
+    return new Array(newAr);
+}
+
+// helper function which access the proper element on an array using indexing
+Object* evalIndexExpression(Object* left, Object* index){
+    if(left->type() == ObjectType::ARRAY_OBJ && index->type() == ObjectType::INTEGER_OBJ){
+        Array* ar = dynamic_cast<Array*>(left);
+        Integer* idx = dynamic_cast<Integer*>(index);
+        return evalArrayIndexExpression(ar, idx);
+    }
+    else{
+        return newError("index operator not supported: " + ObjectTypeToString[left->type()]);
+    }
+}
+
+// helper which accesses the value of the array 
+Object* evalArrayIndexExpression(Array* ar, Integer* index){
+    size_t maxIdx = ar->elements.size() - 1;
+    if(index->value < 0 || index->value > (int)maxIdx)
+        return &NULLOBJ;
+    return ar->elements[(size_t)index->value];
 }

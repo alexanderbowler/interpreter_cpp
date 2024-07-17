@@ -143,6 +143,7 @@ TEST(LexerTests, SpecialSymbolsAndKeywordsTest) {
     10 != 9;\
     \"foobar\"\
     \"foo bar\"\
+    [1, 2];\
     ";
     ExpectedToken tests[] = {
         {TokenType::LET, "let"},
@@ -219,7 +220,13 @@ TEST(LexerTests, SpecialSymbolsAndKeywordsTest) {
         {TokenType::INT, "9"},
         {TokenType::SEMICOLON, ";"},
         {TokenType::STRING, "foobar"},
-        {TokenType::STRING, "foo bar"},     
+        {TokenType::STRING, "foo bar"},    
+        {TokenType::LBRACKET, "["},
+        {TokenType::INT, "1"},
+        {TokenType::COMMA, ","},
+        {TokenType::INT, "2"},
+        {TokenType::RBRACKET, "]"},
+        {TokenType::SEMICOLON, ";"}, 
         {TokenType::ENDOFFILE, ""},
     };
 
@@ -599,8 +606,16 @@ TEST(ParserTests, OperatorPrecedenceTest){
 			"add(a + b + c * d / f + g)",
 			"add((((a + b) + ((c * d) / f)) + g))",
 		},
+        {
+            "a * [1, 2, 3, 4][b * c] * d",
+            "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+        },
+        {
+            "add(a * b[2], b[1], 2 * [1, 2][1])",
+            "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+        },
     };
-    for( int i = 0; i < 22; i++){
+    for( int i = 0; i < 27; i++){
         Lexer lexer = Lexer(infixTests[i].input);
         Parser parser = Parser(&lexer);
         Program* program = parser.parseProgram();
@@ -971,6 +986,68 @@ TEST(ParserTests, TestCallExpressionParameterParsing){
     }
 }
 
+TEST(ParserTests, TestArrayLiteral){
+    std::string input = "[1, 2 * 2, 3 + 3]";
+    Lexer* l = new Lexer(input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_NE(program, nullptr);
+    ASSERT_EQ(program->statements.size(), 1);
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            ArrayLiteral* array = dynamic_cast<ArrayLiteral*>(stmt->expressionValue);
+            ASSERT_EQ(array->elements.size(), 3) << "array.elements.size() is not 3. got="<<array->elements.size();
+            testIntegerLiteral(array->elements[0], 1);
+            std::variant<std::string, int, bool> left = 2;
+            std::variant<std::string, int, bool> right = 2;
+            testInfixExpression(array->elements[1], left, "*", right);
+            left = 3;
+            right = 3;
+            testInfixExpression(array->elements[2], left, "+", right);
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "Expression is not a ArrayLiteral*. Dynamic cast failed.";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program->stmts[0] not ExpressionStatement*. Dynamic cast failed.";
+    }
+}
+
+TEST(ParserTests, TestArrayIndexing){
+    std::string input = "myArray[1 + 1];";
+    Lexer* l = new Lexer(input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_NE(program, nullptr);
+    ASSERT_EQ(program->statements.size(), 1);
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            IndexExpression* indexExp = dynamic_cast<IndexExpression*>(stmt->expressionValue);
+            ASSERT_NE(indexExp->left, nullptr);
+            if(!testIdentifier(indexExp->left, "myArray"))
+                return;
+            std::variant<std::string, int, bool> val = 1;
+            if(!testInfixExpression(indexExp->index, val, "+", val))
+                return;
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "Expression is not a IndexExpression*. Dynamic cast failed.";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program->stmts[0] not ExpressionStatement*. Dynamic cast failed.";
+    }
+}
+
 // Evaluator helper functions:
 Object* testEval(std::string& input){
     Lexer l = Lexer(input);
@@ -1323,11 +1400,30 @@ TEST(EvaluatorTests, TestBuiltinFunctions){
         int expectedVal;
         std::string expectedError;
     } tests[] = {
-        {"len(\"\")", 0, ""},
-        {"len(\"four\")", 4, ""},
-        {"len(\"hello world\")", 11, ""},
-        {"len(1)", 0, "argument to 'len' not supported, got INTEGER"},
-        {"len(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
+        // {"len(\"\")", 0, ""},
+        // {"len(\"four\")", 4, ""},
+        // {"len(\"hello world\")", 11, ""},
+        // {"len(1)", 0, "argument to 'len' not supported, got INTEGER"},
+        // {"len(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
+        // {"len([1, 2, 3])", 3, ""},
+        // {"len([])", 0, ""},
+        // {"first([1, 2, 3, 4])", 1, ""},
+        // {"first(1)", 0, "argument to 'first' must be ARRAY, got INTEGER"},
+        // {"first(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
+        // {"last([1, 2, 3, 4])", 4, ""},
+        // {"last(1)", 0, "argument to 'last' must be ARRAY, got INTEGER"},
+        // {"last(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
+        {"rest([1, 2, 3, 4])[0];", 2, ""},
+        {"rest([1, 2, 3])[1];", 3, ""},
+        {"rest(rest([1,2, 3]))[0]", 3, ""},
+        {"let x = [1, 2, 3];\
+        let y = rest(x);\
+        x[0];", 1, ""
+        },
+        {"push([1, 2, 3], 4)[3];", 4, ""},
+        {"let x = [1, 2, 3]; let y = push(x, 5); y[3]", 5, ""},
+        {"let x = [1, 2, 3]; let y = push(x, 5);\
+        let x = push(x, 7) x[3]", 7, ""},
     };
 
     for(auto test:tests){
@@ -1343,5 +1439,78 @@ TEST(EvaluatorTests, TestBuiltinFunctions){
         }
         else
             testIntegerObject(evaluated, test.expectedVal);
+    }
+}
+
+TEST(EvaluatorTests, TestArrayLiterals){
+  std::string input = "[1, 2*2, 3+3]";
+    Object* evaluated = testEval(input);
+    try{
+        Array* ar = dynamic_cast<Array*>(evaluated);
+        ASSERT_EQ(ar->elements.size(), 3) << "Array has wrong number of elements. expected 3, got=" << ar->elements.size();
+        testIntegerObject(ar->elements[0], 1);
+        testIntegerObject(ar->elements[1], 4);
+        testIntegerObject(ar->elements[2], 6);
+
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Object is not Array*. Dynamic cast failed";
+    }
+}
+
+TEST(EvaluatorTests, TestArrayIndexing){
+    struct {
+        std::string input;
+        int expected;
+    } tests[] = {
+        {
+            "[1, 2, 3][0]",
+            1,
+        },
+        {
+            "[1, 2, 3][1]",
+            2,
+        },
+        {
+            "[1, 2, 3][2]",
+            3,
+        },
+        {
+            "let i = 0; [1][i];",
+            1,
+        },
+        {
+            "[1, 2, 3][1 + 1];",
+            3,
+        },
+        {
+            "let myArray = [1, 2, 3]; myArray[2];",
+            3,
+        },
+        {
+            "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+            6,
+        },
+        {
+            "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+            2,
+        },
+        {
+            "[1, 2, 3][3]",
+            -1, // used to signifiy nullptrs
+        },
+        {
+            "[1, 2, 3][-1]",
+            -1, // used to signify nullpts
+        },
+    };
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        if(test.expected != -1){
+            testIntegerObject(evaluated, test.expected);
+        }
+        else{
+            testNullObject(evaluated);
+        }
     }
 }

@@ -34,6 +34,8 @@ Parser::Parser(Lexer* lexer){
     registerPrefix(TokenType::FUNCTION, &Parser::parseFunctionLiteral);
     registerInfix(TokenType::LPAREN, &Parser::parseCallExpression);
     registerPrefix(TokenType::STRING, &Parser::parseStringLiteral);
+    registerPrefix(TokenType::LBRACKET, &Parser::parseArrayLiteral);
+    registerInfix(TokenType::LBRACKET, &Parser::parseIndexExpression);
 }
 
 // Parses next token
@@ -332,11 +334,12 @@ void Parser::parseFunctionParameters(FunctionLiteral* fnLit){
 // parses a function call expression used as an infix parser when a '(' is infix
 Expression* Parser::parseCallExpression(Expression* function){
     CallExpression* callExpr = new CallExpression(currentToken, function);
-    parseCallArguments(callExpr);
+    parseExpressionList(TokenType::RPAREN, callExpr->arguments);
     return callExpr;
 
 }
 
+// OLD NO LONGER USE THIS:
 // parses the arguments in a function call and adds them to the vector within callExpressiopn
 void Parser::parseCallArguments(CallExpression* callExpression){
     if(peekTokenIs(TokenType::RPAREN))
@@ -360,4 +363,38 @@ void Parser::parseCallArguments(CallExpression* callExpression){
 // parses a string literal
 Expression* Parser::parseStringLiteral(){
     return new StringLiteral(currentToken, currentToken.literal);
+}
+
+// parses an array literal
+Expression* Parser::parseArrayLiteral(){
+    ArrayLiteral* array = new ArrayLiteral(currentToken);
+    parseExpressionList(TokenType::RBRACKET, array->elements);
+    return array;
+}
+
+// parses a list of Expression* elements to pass into an array's elements
+void Parser::parseExpressionList(TokenType endToken, std::vector<Expression*>& elements){
+    if(peekTokenIs(endToken)){
+        nextToken();
+        return;
+    }
+    nextToken();
+    elements.push_back(parseExpression(LOWEST));
+    while(peekTokenIs(TokenType::COMMA)){
+        nextToken();
+        nextToken();
+        elements.push_back(parseExpression(LOWEST));
+    }
+    if(expectPeek(endToken))
+        return;
+}
+
+// parses the index operation for arrays
+Expression* Parser::parseIndexExpression(Expression* left){
+    IndexExpression* exp = new IndexExpression(currentToken, left);
+    nextToken();
+    exp->index = parseExpression(LOWEST);
+    if(!expectPeek(TokenType::RBRACKET))
+        return nullptr;
+    return exp;
 }

@@ -18,7 +18,8 @@ class Parser {
                         SUM = 4, // +
                         PRODUCT = 5, // *
                         PREFIX = 6, // -X or !X
-                        CALL = 7; // myFunction(X)
+                        CALL = 7,   // myFunction(X)
+                        INDEX = 8; // array[0]
 
     std::unordered_map<TokenType, int> precedence = {
         {TokenType::EQ, EQUALS},
@@ -29,7 +30,8 @@ class Parser {
         {TokenType::MINUS, SUM},
         {TokenType::SLASH, PRODUCT},
         {TokenType::ASTERISK, PRODUCT},
-        {TokenType::LPAREN, CALL}        
+        {TokenType::LPAREN, CALL} ,
+        {TokenType::LBRACKET, INDEX},
     };
 
     typedef Expression* (Parser::*prefixParseFnPtr)();
@@ -131,6 +133,15 @@ class Parser {
 
         // parses a string literal
         Expression* parseStringLiteral();
+
+        // parses an array literal
+        Expression* parseArrayLiteral();
+
+        // parses a list of Expression* elements to pass into an array's elements
+        void parseExpressionList(TokenType endToken,  std::vector<Expression*>& elements);
+
+        // parses the index operation for arrays
+        Expression* parseIndexExpression(Expression* left);
 
 
         std::vector<std::string> errors;
