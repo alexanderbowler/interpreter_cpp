@@ -28,7 +28,6 @@ class Node {
 // expressions are terms which can be evaluated to something example x+y or 5/5 or just x
 class Expression : public Node { 
     public: 
-        virtual void expressionNode() = 0;  // TODO: not used maybe for inhertiance might be able to get rid of
 };
 
 // base class for all of the statement nodes 
@@ -40,9 +39,6 @@ class Statement : public Node {
             if(expressionValue)
                 delete expressionValue;
         }
-
-        virtual void statementNode() = 0; //TODO: not used might be needed for inhertiance may be able to get rid of
-
         // vars
         //Token token; from node
         Expression* expressionValue = nullptr; // Almost all statements need expression values so we include this here
@@ -81,9 +77,6 @@ class Identifier : public Expression {
     // default constructor for Identifier
     Identifier(Token token, std::string value);
 
-    // Overriding expressionNode from Expression
-    void expressionNode() override;
-
     // Overriding toString from Node for printing, just prints the identifier value ex. 'x'
     std::string toString() override;
 
@@ -108,9 +101,6 @@ class LetStatement : public Statement {
     // Setting the token constructor
     LetStatement(Token token);
 
-    // Overriding statementNode from Statement
-    void statementNode() override;
-
     // Overriding toString from Node for printing
     // EFFECTS: Prints the LetStatement is a legible way
     std::string toString() override;
@@ -128,9 +118,6 @@ class ReturnStatement : public Statement {
     ReturnStatement(Token token);
 
     // no destructor required as taken care of by Statement
-
-    // Overriding statement node from statement
-    void statementNode() override;
 
     // Overriding toString from Node for printing
     std::string toString() override;
@@ -152,9 +139,6 @@ class ExpressionStatement : public Statement {
     // constructor with expression
     ExpressionStatement(Expression* expression);
 
-    // Overriding statementNode from Statement
-    void statementNode() override;
-
     // Overriding toString from Node for printing
     std::string toString() override;
 
@@ -171,9 +155,6 @@ class IntegerLiteral: public Expression{
     IntegerLiteral(Token token);
 
     // no destrucotr required taken care of by Expression
-
-    // Overriding expressionNode from Expression
-    void expressionNode() override;
 
     // Overriding toString from Node for printing
     std::string toString() override;
@@ -194,9 +175,6 @@ class StringLiteral: public Expression{
 
     // no destrucotr required taken care of by Expression
 
-    // Overriding expressionNode from Expression
-    void expressionNode() override;
-
     // Overriding toString from Node for printing
     std::string toString() override;
 
@@ -214,9 +192,6 @@ class ArrayLiteral: public Expression{
 
         // destructor none needed as taken care of by vector
 
-        // Overriding expressionNode from Expression
-        void expressionNode() override;
-
         // Overriding toString from Node for printing
         std::string toString() override;
 
@@ -233,9 +208,6 @@ class PrefixExpression: public Expression{
 
     // prefix destructor, deletes right
     ~PrefixExpression();
-
-    // expression node override
-    void expressionNode() override;
 
     // toString override
     std::string toString() override;
@@ -255,9 +227,6 @@ class InfixExpression: public Expression{
     // infix destructor
     ~InfixExpression();
 
-    // expression node override
-    void expressionNode() override;
-
     // toString override
     std::string toString() override;
 
@@ -273,9 +242,6 @@ class Boolean : public Expression{
     public:
     //constructor
     Boolean(Token token, bool value);
-
-    // override expression node
-    void expressionNode() override;
 
     // toString for pretty prints
     std::string toString() override;
@@ -294,9 +260,6 @@ class BlockStatement: public Statement{
     // destructor deletes all the Statement* within the block statement
     ~BlockStatement();
 
-    // statment node override
-    void statementNode(){};
-
     // turns Block statement into a string
     std::string toString();
 
@@ -312,9 +275,6 @@ class IfExpression: public Expression{
 
     // destructor deletes all the pointers if they are not null
     ~IfExpression();
-
-    // overrides expressionNode from expression
-    void expressionNode() override;
 
     // prints out if as a string
     std::string toString() override;
@@ -342,9 +302,6 @@ class FunctionLiteral: public Expression{
     // returns a string of the function literal properly formated 
     std::string toString();
 
-    // override expressionNode
-    void expressionNode(){};
-
     //vars
     // Token token; from node
     std::vector<Identifier*> parameters;
@@ -368,9 +325,6 @@ class CallExpression: public Expression {
         for(Expression* argument: arguments)
             delete argument;
     }
-    
-    // override expressionNode
-    void expressionNode(){};
 
     // to string for printing 
     std::string toString();
@@ -396,9 +350,6 @@ class IndexExpression: public Expression{
         if(index)
             delete index;
     }
-    
-    // override expressionNode
-    void expressionNode(){};
 
     // to string for printing 
     std::string toString();
@@ -420,9 +371,6 @@ class HashLiteral: public Expression{
     // destructor
     ~HashLiteral(){
     }
-    
-    // override expressionNode
-    void expressionNode(){};
 
     // to string for printing 
     std::string toString();

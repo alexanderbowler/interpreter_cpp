@@ -38,17 +38,12 @@ std::string Program::toString(){
 
 // default constructor 
 LetStatement::LetStatement(){
-     //TODO: implement this
+     name = nullptr;
 }
 
 // Setting the token constructor
 LetStatement::LetStatement(Token token){
     this->token = token;
-}
-
-// Overriding statementNode from Statement
-// EFFECTS: 
-void LetStatement::statementNode() {
 }
 
 // Overriding toString from Node for printing
@@ -69,10 +64,6 @@ Identifier::Identifier(Token token, std::string value){
     this->value = value;
 }
 
-// Overriding expressionNode from Expression
-void Identifier::expressionNode() {
-}
-
 // Overriding toString from Node for printing
 std::string Identifier::toString() {
     return value;
@@ -81,10 +72,6 @@ std::string Identifier::toString() {
 // constructor with token
 ReturnStatement::ReturnStatement(Token token){
     this->token = token;
-}
-
-// Overriding statement node from statement
-void ReturnStatement::statementNode() {
 }
 
 // Overriding toString from Node for printing
@@ -109,11 +96,6 @@ ExpressionStatement::ExpressionStatement(Expression* expression){
 
 }
 
-
-// Overriding statementNode from Statement
-void ExpressionStatement::statementNode(){
-}
-
 // Overriding toString from Node for printing
 std::string ExpressionStatement::toString() {
     if(expressionValue != nullptr){
@@ -129,17 +111,9 @@ IntegerLiteral::IntegerLiteral(Token token){
 
 }
 
-// Overriding expressionNode from Expression
-void IntegerLiteral::expressionNode(){
-}
-
 // Overriding toString from Node for printing
 std::string IntegerLiteral::toString() {
     return token.literal;
-}
-
-// expression node override
-void PrefixExpression::expressionNode(){
 }
 
 // toString override
@@ -178,10 +152,6 @@ InfixExpression::~InfixExpression(){
         delete right;
 }
 
-// expression node override
-void InfixExpression::expressionNode(){
-}
-
 // toString override
 std::string InfixExpression::toString(){
     std::string output = "";
@@ -198,9 +168,6 @@ Boolean::Boolean(Token token, bool value){
     this->token = token;
     this->value = value;
 }
-
-// override expression node
-void Boolean::expressionNode() {};
 
 std::string Boolean::toString() {
     return token.literal;
@@ -227,9 +194,6 @@ std::string IfExpression::toString() {
     }
     return output;
 }
-
-// overrides expressionNode from expression
-void IfExpression::expressionNode(){};
 
 // destructor deletes all the Statement* within the block statement
 BlockStatement::~BlockStatement(){
@@ -275,18 +239,9 @@ std::string CallExpression::toString(){
     return output;
 }
 
-// Overriding expressionNode from Expression
-void StringLiteral::expressionNode() {
-};
-
 // Overriding toString from Node for printing
 std::string StringLiteral::toString() {
     return token.literal;
-}
-
-// Overriding expressionNode from Expression
-void ArrayLiteral::expressionNode() {
-    
 }
 
 // Overriding toString from Node for printing

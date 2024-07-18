@@ -1288,7 +1288,6 @@ bool testNullObject(Object* obj){
     try{
         Null* nullObj = dynamic_cast<Null*>(obj);
         Null* nulltrue = &NULLOBJ;
-        std::cout<<obj->inspect()<<NULLOBJ.inspect();
 
         if(obj->inspect() != NULLOBJ.inspect()){
             ADD_FAILURE() <<"object is not NULL";
