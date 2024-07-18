@@ -410,4 +410,26 @@ class IndexExpression: public Expression{
 
 };
 
+class HashLiteral: public Expression{
+     public:
+    // constructor for call Expression
+    HashLiteral(Token token){
+        this->token = token;
+    }
+
+    // destructor
+    ~HashLiteral(){
+    }
+    
+    // override expressionNode
+    void expressionNode(){};
+
+    // to string for printing 
+    std::string toString();
+
+    //vars 
+    // token; from node, is '(' 
+    std::unordered_map<Expression*, Expression*> pairs;
+};
+
 #endif // AST_H

@@ -93,6 +93,9 @@ Token Lexer::nextToken(){
         case ']':
             tok = Token{TokenType::RBRACKET, "]"};
             break;
+        case ':':
+            tok = Token{TokenType::COLON, ":"};
+            break;
         default:
             if(isalpha(ch) || ch == '_'){
                 tok.literal = readIdentifier();

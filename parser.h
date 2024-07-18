@@ -143,6 +143,9 @@ class Parser {
         // parses the index operation for arrays
         Expression* parseIndexExpression(Expression* left);
 
+        // parses the Hash table within the programming language
+        Expression* parseHashLiteral();
+
 
         std::vector<std::string> errors;
 

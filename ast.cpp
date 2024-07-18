@@ -310,3 +310,17 @@ std::string IndexExpression::toString(){
     output += "])";
     return output;
 }
+
+ // to string for printing 
+std::string HashLiteral::toString(){
+    std::string output = "{";
+    for(auto it = pairs.begin(); it != pairs.end(); it++){
+        output += it->first->toString() + ":" + it->second->toString();
+        auto ahead = it;
+        ahead++;
+        if(ahead != pairs.end())
+            output += ", ";
+    }
+    output += "}";
+    return output;
+}

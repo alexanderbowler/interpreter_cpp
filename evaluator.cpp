@@ -121,6 +121,10 @@ Object* Eval(Node* node, Environment* env){
             return index;
         return evalIndexExpression(left, index);
     }
+    else if(node_type == typeid(HashLiteral)){
+        HashLiteral* hashLit = dynamic_cast<HashLiteral*>(node);
+        return evalHashLiteral(hashLit, env);
+    }
     return nullptr;
 
 }
@@ -472,6 +476,10 @@ Object* evalIndexExpression(Object* left, Object* index){
         Integer* idx = dynamic_cast<Integer*>(index);
         return evalArrayIndexExpression(ar, idx);
     }
+    else if(left->type() == ObjectType::HASH_OBJ){
+        Hash* hash = dynamic_cast<Hash*>(left);
+        return EvalHashIndexExpression(hash, index);
+    }
     else{
         return newError("index operator not supported: " + ObjectTypeToString[left->type()]);
     }
@@ -484,3 +492,38 @@ Object* evalArrayIndexExpression(Array* ar, Integer* index){
         return &NULLOBJ;
     return ar->elements[(size_t)index->value];
 }
+
+// evaluation function which evaluates a hash literal
+Object* evalHashLiteral(HashLiteral* hashLit, Environment* env){
+    Hash* newHash = new Hash();
+
+    for(auto it : hashLit->pairs){
+        Object* key = Eval(it.first, env);
+        if(isError(key))
+            return key;
+        if(!hashable(key))
+            return newError("unusable as hash key. type=" + ObjectTypeToString[key->type()]);
+
+        Object* value = Eval(it.second, env);
+        if(isError(value))
+            return value;
+
+        HashableObject* hashKey = dynamic_cast<HashableObject*>(key);
+        HashKey hashed = hashKey->hashKey();
+        newHash->pairs[hashed] = HashPair{key, value};
+    }
+    return newHash;
+}
+
+// function to evaluate indexing into a hash object
+ Object* EvalHashIndexExpression(Hash* hash, Object* index){
+    if(!hashable(index)){
+        return newError("unusable as hash key: " + ObjectTypeToString[index->type()]);
+    }
+    HashableObject* idx = dynamic_cast<HashableObject*>(index);
+    auto it = hash->pairs.find(idx->hashKey());
+    if(it == hash->pairs.end()){
+        return &NULLOBJ;
+    }
+    return it->second.value;
+ }

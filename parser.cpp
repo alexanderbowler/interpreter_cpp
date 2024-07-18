@@ -36,6 +36,7 @@ Parser::Parser(Lexer* lexer){
     registerPrefix(TokenType::STRING, &Parser::parseStringLiteral);
     registerPrefix(TokenType::LBRACKET, &Parser::parseArrayLiteral);
     registerInfix(TokenType::LBRACKET, &Parser::parseIndexExpression);
+    registerPrefix(TokenType::LBRACE, &Parser::parseHashLiteral);
 }
 
 // Parses next token
@@ -397,4 +398,27 @@ Expression* Parser::parseIndexExpression(Expression* left){
     if(!expectPeek(TokenType::RBRACKET))
         return nullptr;
     return exp;
+}
+
+// parses the Hash table within the programming language
+Expression* Parser::parseHashLiteral(){
+    HashLiteral* hash = new HashLiteral(currentToken);
+
+    while(!peekTokenIs(TokenType::RBRACE)){
+        nextToken();
+        Expression* key = parseExpression(LOWEST);
+
+        if(!expectPeek(TokenType::COLON)){
+            return nullptr;
+        }
+        nextToken();
+        Expression* value = parseExpression(LOWEST);
+        hash->pairs[key] = value;
+
+        if(!peekTokenIs(TokenType::RBRACE) && !expectPeek(TokenType::COMMA))
+            return nullptr;
+    }
+    if(!expectPeek(TokenType::RBRACE))
+        return nullptr;
+    return hash;
 }

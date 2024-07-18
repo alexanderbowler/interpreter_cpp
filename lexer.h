@@ -37,6 +37,7 @@ enum class TokenType : uint8_t {
     STRING,
     LBRACKET,
     RBRACKET,
+    COLON,
 };
 
 
@@ -78,6 +79,7 @@ class Lexer{
             {TokenType::ELSE, "ELSE"},
             {TokenType::LBRACKET, "["},
             {TokenType::RBRACKET, "]"},
+            {TokenType::COLON, ":"},
             };
 
         // Lexer constructor

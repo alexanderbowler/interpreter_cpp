@@ -110,3 +110,64 @@ std::string Array::inspect() {
 ObjectType Array::type() {
     return ObjectType::ARRAY_OBJ;
 }
+
+// returns the hash of the object
+HashKey BooleanObj::hashKey(){
+    int hashVal;
+    if(value == true)
+        hashVal = 1;
+    else
+        hashVal = 0;
+    return HashKey{type(), hashVal};
+}
+
+// returns the hash of the object
+HashKey String::hashKey(){
+    std::hash<std::string> hasher;
+    return HashKey{type(), (int)hasher(value)};
+}
+
+bool operator==(const HashKey& lhs, const HashKey& rhs){
+    if(lhs.type == rhs.type && lhs.value == rhs.value)
+        return true;
+    else
+        return false;
+}
+
+bool operator!=(const HashKey& lhs, const HashKey& rhs){
+    return !(lhs == rhs);
+}
+
+// returns the hash of the object
+HashKey Integer::hashKey(){
+    return HashKey{type(), value};
+}
+
+// returns the value of the function as a string
+std::string Hash::inspect() {
+    std::string output = "{";
+    for(auto it = pairs.begin(); it != pairs.end(); it++){
+        output += it->second.key->inspect() + ": " + it->second.value->inspect();
+        auto next = it;
+        if(++next != pairs.end())
+            output += ", ";
+    }
+    output += "}";
+    return output;
+}
+
+// returns the object type of this particular object BUILTIN_OBJ
+ObjectType Hash::type() {
+    return ObjectType::HASH_OBJ;
+}
+
+std::size_t std::hash<HashKey>::operator()(const HashKey& k) const{
+    return ((std::hash<std::string>()(ObjectTypeToString[k.type]) >> 3) ^ (size_t)k.value);
+}
+
+// returns if the object pointer is hashable
+bool hashable(Object* obj){
+    return (obj->type() == ObjectType::STRING_OBJ ||
+            obj->type() == ObjectType::INTEGER_OBJ ||
+            obj->type() == ObjectType::BOOLEAN_OBJ);
+}

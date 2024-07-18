@@ -20,7 +20,39 @@ enum class ObjectType : uint8_t {
     STRING_OBJ,
     BUILTIN_OBJ,
     ARRAY_OBJ,
+    HASH_OBJ,
 };
+
+static std::unordered_map<ObjectType, std::string> ObjectTypeToString = {
+    {ObjectType::INTEGER_OBJ, "INTEGER"},
+    {ObjectType::BOOLEAN_OBJ, "BOOLEAN"},
+    {ObjectType::NULL_OBJ, "NULL"},
+    {ObjectType::RETURN_VALUE_OBJ, "RETURN_VALUE"},
+    {ObjectType::ERROR_OBJ, "ERROR"},
+    {ObjectType::FUNCTION_OBJ, "FUNCTION"},
+    {ObjectType::STRING_OBJ, "STRING"},
+    {ObjectType::BUILTIN_OBJ, "BUILTIN"},
+    {ObjectType::ARRAY_OBJ, "ARRAY"},
+    {ObjectType::HASH_OBJ, "HASH"},
+};
+
+
+// hashkey struct
+struct HashKey {
+    ObjectType type;
+    int value;
+};
+
+template <>
+struct std::hash<HashKey>{
+    std::size_t operator()(const HashKey& k) const;
+};
+
+
+
+bool operator==(const HashKey& lhs, const HashKey& rhs);
+
+bool operator!=(const HashKey& lhs, const HashKey& rhs);
 
 class Object {
     public:
@@ -29,7 +61,21 @@ class Object {
         virtual std::string inspect() = 0;
 };
 
-class Integer: public Object {
+// returns if the object pointer is hashable
+bool hashable(Object* obj);
+
+// struct for the key value pair the hash goes to 
+struct HashPair {
+    Object* key;
+    Object* value;
+};
+
+class HashableObject: public Object{
+    public:
+        virtual HashKey hashKey() = 0;
+};
+
+class Integer: public HashableObject {
     public:
     //constructor
     Integer(int val): value(val){}
@@ -40,11 +86,14 @@ class Integer: public Object {
     // returns the object type of this particular object INTEGER
     ObjectType type() override;
 
+    // returns the hash of the object
+    HashKey hashKey() override;
+
     // vars
         int value;
 };
 
-class String: public Object {
+class String: public HashableObject {
     public:
     //constructor
     String(std::string val): value(val){}
@@ -55,11 +104,14 @@ class String: public Object {
     // returns the object type of this particular object INTEGER
     ObjectType type() override;
 
+    // returns the hash of the object
+    HashKey hashKey() override;
+
     // vars
         std::string value;
 };
 
-class BooleanObj: public Object {
+class BooleanObj: public HashableObject {
     public:
     // constructor
     BooleanObj(bool val): value(val){}
@@ -69,6 +121,9 @@ class BooleanObj: public Object {
 
     // returns the object type of this particular object INTEGER
     ObjectType type() override;
+
+    // returns the hash of the object
+    HashKey hashKey() override;
 
     // vars
         bool value;
@@ -172,6 +227,21 @@ class Array: public Object{
 
     //vars
     std::vector<Object*> elements;
+};
+
+class Hash: public Object {
+    public:
+    // constructor
+    Hash(){};
+
+    // returns the value of the function as a string
+    std::string inspect() override;
+
+    // returns the object type of this particular object BUILTIN_OBJ
+    ObjectType type() override;
+
+    //vars
+    std::unordered_map<HashKey, HashPair> pairs;
 };
 
 #endif

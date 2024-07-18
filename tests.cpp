@@ -144,6 +144,7 @@ TEST(LexerTests, SpecialSymbolsAndKeywordsTest) {
     \"foobar\"\
     \"foo bar\"\
     [1, 2];\
+    {\"foo\": \"bar\"}\
     ";
     ExpectedToken tests[] = {
         {TokenType::LET, "let"},
@@ -226,7 +227,12 @@ TEST(LexerTests, SpecialSymbolsAndKeywordsTest) {
         {TokenType::COMMA, ","},
         {TokenType::INT, "2"},
         {TokenType::RBRACKET, "]"},
-        {TokenType::SEMICOLON, ";"}, 
+        {TokenType::SEMICOLON, ";"},
+        {TokenType::LBRACE, "{"},
+        {TokenType::STRING, "foo"},
+        {TokenType::COLON, ":"},
+        {TokenType::STRING, "bar"},
+        {TokenType::RBRACE, "}"}, 
         {TokenType::ENDOFFILE, ""},
     };
 
@@ -1048,6 +1054,192 @@ TEST(ParserTests, TestArrayIndexing){
     }
 }
 
+TEST(ParserTests, TestHashLiteralsStringKeys){
+     std::string input = "{\"one\":1, \"two\":2, \"three\":3};";
+    Lexer* l = new Lexer(input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_NE(program, nullptr);
+    ASSERT_EQ(program->statements.size(), 1);
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            HashLiteral* hashLit = dynamic_cast<HashLiteral*>(stmt->expressionValue);
+            ASSERT_EQ(hashLit->pairs.size(), 3) << "Hash literal does not contain 3 pairs. got=" << hashLit->pairs.size();
+            std::unordered_map<std::string, int> expected = {
+                {"one", 1},
+                {"two", 2},
+                {"three", 3}
+            };
+            for(auto hashIt = hashLit->pairs.begin(); hashIt != hashLit->pairs.end(); hashIt++){
+                try{
+                    StringLiteral* str = dynamic_cast<StringLiteral*>(hashIt->first);
+                    int expectedValue = expected[str->toString()];
+                    testIntegerLiteral(hashIt->second, expectedValue);
+                }
+                catch(const std::bad_cast& e){
+                    ADD_FAILURE() << "key is not StringLiteral*. Dynamic cast failed.";
+                }
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "Expression is not a HashLiteral*. Dynamic cast failed.";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program->stmts[0] not ExpressionStatement*. Dynamic cast failed.";
+    }
+}
+TEST(ParserTests, TestHashLiteralsWithExpressions){
+     std::string input = "{\"one\": 0+1, \"two\": 10 - 8, \"three\": 15 / 5};";
+    Lexer* l = new Lexer(input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_NE(program, nullptr);
+    ASSERT_EQ(program->statements.size(), 1);
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            HashLiteral* hashLit = dynamic_cast<HashLiteral*>(stmt->expressionValue);
+            ASSERT_EQ(hashLit->pairs.size(), 3) << "Hash literal does not contain 3 pairs. got=" << hashLit->pairs.size();
+            std::unordered_map<std::string, 
+                std::tuple<
+                    std::variant<std::string, bool, int>, std::string, std::variant<std::string, bool, int>
+                >
+            > expected = {
+                {"one", {0, "+", 1}},
+                {"two", {10, "-", 8}},
+                {"three", {15, "/", 5}}
+            };
+            for(auto hashIt = hashLit->pairs.begin(); hashIt != hashLit->pairs.end(); hashIt++){
+                try{
+                    StringLiteral* str = dynamic_cast<StringLiteral*>(hashIt->first);
+                    auto expectedValue = expected[str->toString()];
+                    testInfixExpression(hashIt->second, std::get<0>(expectedValue), std::get<1>(expectedValue), std::get<2>(expectedValue));
+                }
+                catch(const std::bad_cast& e){
+                    ADD_FAILURE() << "key is not StringLiteral*. Dynamic cast failed.";
+                }
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "Expression is not a HashLiteral*. Dynamic cast failed.";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program->stmts[0] not ExpressionStatement*. Dynamic cast failed.";
+    }
+}
+
+TEST(ParserTests, TestHashLiteralsBooleanKeys){
+     std::string input = "{true:1, false:2};";
+    Lexer* l = new Lexer(input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_NE(program, nullptr);
+    ASSERT_EQ(program->statements.size(), 1);
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            HashLiteral* hashLit = dynamic_cast<HashLiteral*>(stmt->expressionValue);
+            ASSERT_EQ(hashLit->pairs.size(), 2) << "Hash literal does not contain 2 pairs. got=" << hashLit->pairs.size();
+            std::unordered_map<bool, int> expected = {
+                {true, 1},
+                {false, 2},
+            };
+            for(auto hashIt = hashLit->pairs.begin(); hashIt != hashLit->pairs.end(); hashIt++){
+                try{
+                    Boolean* str = dynamic_cast<Boolean*>(hashIt->first);
+                    int expectedValue = expected[str->value];
+                    testIntegerLiteral(hashIt->second, expectedValue);
+                }
+                catch(const std::bad_cast& e){
+                    ADD_FAILURE() << "key is not Boolean*. Dynamic cast failed.";
+                }
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "Expression is not a HashLiteral*. Dynamic cast failed.";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program->stmts[0] not ExpressionStatement*. Dynamic cast failed.";
+    }
+}
+
+TEST(ParserTests, TestHashLiteralsIntegerKeys){
+     std::string input = "{1:2, 2:3};";
+    Lexer* l = new Lexer(input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_NE(program, nullptr);
+    ASSERT_EQ(program->statements.size(), 1);
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            HashLiteral* hashLit = dynamic_cast<HashLiteral*>(stmt->expressionValue);
+            ASSERT_EQ(hashLit->pairs.size(), 2) << "Hash literal does not contain 2 pairs. got=" << hashLit->pairs.size();
+            std::unordered_map<int, int> expected = {
+                {1, 2},
+                {2, 3},
+            };
+            for(auto hashIt = hashLit->pairs.begin(); hashIt != hashLit->pairs.end(); hashIt++){
+                try{
+                    IntegerLiteral* intLit = dynamic_cast<IntegerLiteral*>(hashIt->first);
+                    int expectedValue = expected[intLit->value];
+                    testIntegerLiteral(hashIt->second, expectedValue);
+                }
+                catch(const std::bad_cast& e){
+                    ADD_FAILURE() << "key is not IntegerLiteral*. Dynamic cast failed.";
+                }
+            }
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "Expression is not a HashLiteral*. Dynamic cast failed.";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program->stmts[0] not ExpressionStatement*. Dynamic cast failed.";
+    }
+}
+
+TEST(ParserTests, TestEmptyHashLiteral){
+     std::string input = "{};";
+    Lexer* l = new Lexer(input);
+    Parser p = Parser(l);
+    Program* program = p.parseProgram();
+    checkParserErrors(p);
+
+    ASSERT_NE(program, nullptr);
+    ASSERT_EQ(program->statements.size(), 1);
+
+    try{
+        ExpressionStatement* stmt = dynamic_cast<ExpressionStatement*>(program->statements[0]);
+        try{
+            HashLiteral* hashLit = dynamic_cast<HashLiteral*>(stmt->expressionValue);
+            ASSERT_EQ(hashLit->pairs.size(), 0) << "Hash literal does not contain 0 pairs. got=" << hashLit->pairs.size();
+        }
+        catch(const std::bad_cast& e){
+            ADD_FAILURE() << "Expression is not a HashLiteral*. Dynamic cast failed.";
+        }
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "program->stmts[0] not ExpressionStatement*. Dynamic cast failed.";
+    }
+}
+
 // Evaluator helper functions:
 Object* testEval(std::string& input){
     Lexer l = Lexer(input);
@@ -1294,6 +1486,10 @@ TEST(EvaluatorTests, TestErrorHandling){
             "\"Hello\" - \"world\"",
             "unknown operator: STRING - STRING"
         },
+        {
+            "{\"name\": \"Monkey\"}[fn(x) { x }];",
+            "unusable as hash key: FUNCTION",
+        }
     };
         
     for(auto test: tests){
@@ -1400,19 +1596,19 @@ TEST(EvaluatorTests, TestBuiltinFunctions){
         int expectedVal;
         std::string expectedError;
     } tests[] = {
-        // {"len(\"\")", 0, ""},
-        // {"len(\"four\")", 4, ""},
-        // {"len(\"hello world\")", 11, ""},
-        // {"len(1)", 0, "argument to 'len' not supported, got INTEGER"},
-        // {"len(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
-        // {"len([1, 2, 3])", 3, ""},
-        // {"len([])", 0, ""},
-        // {"first([1, 2, 3, 4])", 1, ""},
-        // {"first(1)", 0, "argument to 'first' must be ARRAY, got INTEGER"},
-        // {"first(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
-        // {"last([1, 2, 3, 4])", 4, ""},
-        // {"last(1)", 0, "argument to 'last' must be ARRAY, got INTEGER"},
-        // {"last(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
+        {"len(\"\")", 0, ""},
+        {"len(\"four\")", 4, ""},
+        {"len(\"hello world\")", 11, ""},
+        {"len(1)", 0, "argument to 'len' not supported, got INTEGER"},
+        {"len(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
+        {"len([1, 2, 3])", 3, ""},
+        {"len([])", 0, ""},
+        {"first([1, 2, 3, 4])", 1, ""},
+        {"first(1)", 0, "argument to 'first' must be ARRAY, got INTEGER"},
+        {"first(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
+        {"last([1, 2, 3, 4])", 4, ""},
+        {"last(1)", 0, "argument to 'last' must be ARRAY, got INTEGER"},
+        {"last(\"one\", \"two\")", 0, "wrong number of arguments. expected=1, got=2"},
         {"rest([1, 2, 3, 4])[0];", 2, ""},
         {"rest([1, 2, 3])[1];", 3, ""},
         {"rest(rest([1,2, 3]))[0]", 3, ""},
@@ -1513,4 +1709,149 @@ TEST(EvaluatorTests, TestArrayIndexing){
             testNullObject(evaluated);
         }
     }
+}
+
+TEST(EvaluatorTests, TestHashLiterals){
+  std::string input = "let two = \"two\";\
+    {\
+       \"one\": 10 - 9,\
+        two: 1 + 1,\
+       \"thr\" + \"ee\": 6 / 2,\
+        4: 4,\
+        true: 5,\
+        false: 6\
+    }";
+    Object* evaluated = testEval(input);
+    try{
+        Hash* hash = dynamic_cast<Hash*>(evaluated);
+        std::unordered_map<HashKey, int> expected = {
+            {String("one").hashKey(), 1},
+            {String("two").hashKey(), 2},
+            {String("three").hashKey(), 3},
+            {Integer(4).hashKey(), 4},
+            {TRUE.hashKey(), 5},
+            {FALSE.hashKey(), 6},
+        };
+        ASSERT_EQ(hash->pairs.size(), expected.size()) << "hash has wrong number of pairs. got=" << hash->pairs.size();
+        for(auto expectIt: expected){
+            std::unordered_map<HashKey, HashPair>::iterator evalIt = hash->pairs.find(expectIt.first);
+            ASSERT_NE(evalIt, hash->pairs.end()) << "no pair for given key, expected val=" << expectIt.second;
+            testIntegerObject(evalIt->second.value, expectIt.second);
+        }
+
+    }
+    catch(const std::bad_cast& e){
+        ADD_FAILURE() << "Object is not Hash*. Dynamic cast failed";
+    }
+}
+
+TEST(EvaluatorTests, TestHashIndexing){
+    struct {
+        std::string input;
+        int expected;
+    } tests[] = {
+        {
+            "{\"foo\": 5}[\"foo\"]",
+            5,
+        },
+        {
+            "{\"foo\": 5}[\"bar\"]",
+            -1,
+        },
+        {
+            "let key = \"foo\"; {\"foo\": 5}[key]",
+            5,
+        },
+        {
+            "{}[\"foo\"]",
+            -1,
+        },
+        {
+            "{5: 5}[5]",
+            5,
+        },
+        {
+            "{true: 5}[true]",
+            5,
+        },
+        {
+            "{false: 5}[false]",
+            5,
+        },
+    };
+    for(auto test: tests){
+        Object* evaluated = testEval(test.input);
+        if(test.expected != -1){
+            testIntegerObject(evaluated, test.expected);
+        }
+        else{
+            testNullObject(evaluated);
+        }
+    }
+}
+
+
+// Object Tests
+TEST(ObjectTests, TestStringHashKey){
+    String* hello1 =  new String("Hello World");
+    String* hello2 =  new String("Hello World");
+    String* name1 =  new String("name");
+    String* name2 =  new String("name");
+
+    EXPECT_EQ(hello1->hashKey(), hello2->hashKey()) << "strings with same content have different hash keys";
+    EXPECT_EQ(name1->hashKey(), name2->hashKey())<< "strings with same content have different hash keys";
+    EXPECT_NE(hello1->hashKey(), name1->hashKey()) << "strings with different content have same hash keys";
+
+    delete hello1;
+    delete hello2;
+    delete name1;
+    delete name2;
+}
+
+TEST(ObjectTests, TestBooleanHashKey){
+    BooleanObj* true1 =  new BooleanObj(true);
+    BooleanObj* true2 =  new BooleanObj(true);
+    BooleanObj* false1 = new BooleanObj(false);
+    BooleanObj* false2 = new BooleanObj(false);
+
+    EXPECT_EQ(true1->hashKey(), true2->hashKey()) << "bools with same content have different hash keys";
+    EXPECT_EQ(false1->hashKey(), false2->hashKey())<< "bools with same content have different hash keys";
+    EXPECT_NE(true1->hashKey(), false2->hashKey()) << "bools with different content have same hash keys";
+
+    delete true1;
+    delete true2;
+    delete false1;
+    delete false2;
+}
+
+TEST(ObjectTests, TestMixedHashKey){
+    Integer* true1 =  new Integer(1);
+    Integer* true2 =  new Integer(3);
+    BooleanObj* bool1 =  new BooleanObj(true);
+    String* hello1 =  new String("3");
+
+    EXPECT_NE(true1->hashKey(), true2->hashKey()) << "ints with same content have different hash keys";
+    EXPECT_NE(true1->hashKey(), bool1->hashKey())<< "different types hashing to same value";
+    EXPECT_NE(true2->hashKey(), hello1->hashKey()) << "different types hashing to same value";
+
+    delete true1;
+    delete true2;
+    delete bool1;
+    delete hello1;
+}
+
+TEST(ObjectTests, TestIntegerHashKey){
+    Integer* true1 =  new Integer(1);
+    Integer* true2 =  new Integer(1);
+    Integer* false1 = new Integer(3);
+    Integer* false2 = new Integer(3);
+
+    EXPECT_EQ(true1->hashKey(), true2->hashKey()) << "ints with same content have different hash keys";
+    EXPECT_EQ(false1->hashKey(), false2->hashKey())<< "ints with same content have different hash keys";
+    EXPECT_NE(true1->hashKey(), false2->hashKey()) << "ints with different content have same hash keys";
+
+    delete true1;
+    delete true2;
+    delete false1;
+    delete false2;
 }

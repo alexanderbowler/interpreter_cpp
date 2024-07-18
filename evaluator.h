@@ -10,14 +10,7 @@ static BooleanObj TRUE = BooleanObj(true);
 static BooleanObj FALSE = BooleanObj(false);
 static Null NULLOBJ = Null();
 
-static std::unordered_map<ObjectType, std::string> ObjectTypeToString = {
-    {ObjectType::INTEGER_OBJ, "INTEGER"},
-    {ObjectType::BOOLEAN_OBJ, "BOOLEAN"},
-    {ObjectType::NULL_OBJ, "NULL"},
-    {ObjectType::RETURN_VALUE_OBJ, "RETURN_VALUE"},
-    {ObjectType::ERROR_OBJ, "ERROR"},
-    {ObjectType::STRING_OBJ, "STRING"},
-};
+
 
 // len function wrapper using Object* 
 // REQUIRES:    input[0] be the actual input to the length function
@@ -101,5 +94,11 @@ Object* rest(std::vector<Object*> inputs);
 
 // builtin function PUSH for arrays gets a copy of the array and adds desired element to the end
 Object* push(std::vector<Object*> inputs);
+
+// evaluation function which evaluates a hash literal
+Object* evalHashLiteral(HashLiteral* hashLit, Environment* env);
+
+// function to evaluate indexing into a hash object
+ Object* EvalHashIndexExpression(Hash* hash, Object* index);
 
 #endif
