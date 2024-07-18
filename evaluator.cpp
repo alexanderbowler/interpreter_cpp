@@ -10,7 +10,8 @@ std::unordered_map<std::string, Builtin*>builtins = {
     {"first", new Builtin(&first)},
     {"last", new Builtin(&last)},
     {"rest", new Builtin(&rest)},
-    {"push", new Builtin(&push)}
+    {"push", new Builtin(&push)},
+    {"puts", new Builtin(&puts)}
 };
 
 Object* Eval(Node* node, Environment* env){
@@ -527,3 +528,11 @@ Object* evalHashLiteral(HashLiteral* hashLit, Environment* env){
     }
     return it->second.value;
  }
+
+ // builtin function puts for printing to the screen
+Object* puts(std::vector<Object*> inputs){
+    for(Object* obj: inputs){
+        std::cout<<obj->inspect()<<"\n";
+    }
+    return &NULLOBJ;
+}

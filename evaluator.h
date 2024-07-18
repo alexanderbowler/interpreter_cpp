@@ -101,4 +101,7 @@ Object* evalHashLiteral(HashLiteral* hashLit, Environment* env);
 // function to evaluate indexing into a hash object
  Object* EvalHashIndexExpression(Hash* hash, Object* index);
 
+ // builtin function puts for printing to the screen
+Object* puts(std::vector<Object*> inputs);
+
 #endif
