@@ -1,6 +1,6 @@
 <h1 style="display: flex; align-items: flex-start; justify-content: space-between; margin: 0;">
-  <span>Interpreter for Monkey Language</span>
-  <img src="README_graphics/ReadmeIcon.png" alt="Interpreter Icon" style="height: 8em; display: block;">
+  <span style="line-height: 1; margin: 0; padding: 0;">Interpreter for Monkey Language</span>
+  <img src="README_graphics/ReadmeIcon.png" alt="Interpreter Icon" style="height: 8em; display: block; align-self: flex-start; margin: 0;">
 </h1>
 
 ## About
