@@ -9,7 +9,7 @@ This project was created based on the principles in the textbook "Creating an In
 ## Table of Contents
 
 ## Running the Interpreter
-<img src="README_graphics/compilation.gif" alt="Compilation Demo" style="width: 50%; height: auto;"> \
+<img src="README_graphics/Compilation.gif" alt="Compilation Demo" style="width: 50%; height: auto;"> \
 To run the interpreter follow the below steps: \
 Clone the repository\
 ```git clone https://github.com/alexanderbowler/interpreter_cpp.git```\
@@ -31,7 +31,7 @@ Arrays and array manipulation `let a = [1, 2, 3]`, `len(a) = 3`, `first(a) = 1`,
 Hashmaps `let h = {"a": 1, "b": 2};`, `h["a"]` \
 
 Demo:\
-<img src="README_graphics/interpreter_demo.gif" alt="Interpreter Demo" style="width: 50%; height: auto;">
+<img src="README_graphics/Interpreter_demo.gif" alt="Interpreter Demo" style="width: 50%; height: auto;">
 
 ## Testing
 To compile and run tests do ```cmake -S {source_dir} -B {build_dir}``` ex. ```cmake -S . -B build```\
