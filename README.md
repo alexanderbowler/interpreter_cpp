@@ -4,6 +4,7 @@
 </h1>
 
 ## About
+<img src="README_graphics/InterpreterDiagram.png" alt="Interpreter Diagram" style="width: 50%; height: auto;">
 This project was created based on the principles in the textbook "Creating an Interpreter in Go". It is an interpreter for Monkey Language, but written in C++. The interpreter  lexes, parses and evaluates Moneky code line by line. The Lexer, Parser, and Evaluator and in the respective files. There is also an extensive Google Tests test suite.
 
 ## Table of Contents
