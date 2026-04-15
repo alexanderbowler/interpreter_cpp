@@ -4,40 +4,98 @@
 </h1>
 
 ## About
-<img src="README_graphics/InterpreterDiagram.png" alt="Interpreter Diagram" style="width: 50%; height: auto;">
-This project was created based on the principles in the textbook "Creating an Interpreter in Go". It is an interpreter for Monkey Language, but written in C++. The interpreter  lexes, parses and evaluates Moneky code line by line. The Lexer, Parser, and Evaluator and in the respective files. There is also an extensive Google Tests test suite.
+
+This project was created based on the principles in the textbook "Writing an Interpreter in Go". It is an interpreter for the Monkey language, but written in C++. The interpreter lexes, parses, and evaluates Monkey code line by line. The Lexer, Parser, and Evaluator are implemented in their respective files. There is also an extensive GoogleTest test suite.
 
 ## Table of Contents
 
+- [About](#about)
+- [How the Interpreter Works](#how-the-interpreter-works)
+- [Running the Interpreter](#running-the-interpreter)
+- [Available Commands](#available-commands)
+- [Testing](#testing)
+- [FAQs](#faqs)
+
+## How the Interpreter Works
+
+The interpreter runs each line of Monkey code through three main stages:
+
+1. The lexer reads the source text and converts it into tokens, such as identifiers, numbers, operators, keywords, brackets, and strings.
+2. The parser consumes those tokens and builds an abstract syntax tree (AST) that represents the structure of the program.
+3. The evaluator walks the AST, resolves variables through the environment, evaluates expressions, applies functions, and returns the resulting object.
+
+The diagram below shows how source input moves through those stages before producing an evaluated result.
+
+<img src="README_graphics/InterpreterDiagram.png" alt="Interpreter Diagram" width="900">
+
 ## Running the Interpreter
-<img src="README_graphics/Compilation.gif" alt="Compilation Demo" style="width: 50%; height: auto;"> \
-To run the interpreter follow the below steps: \
-Clone the repository\
-```git clone https://github.com/alexanderbowler/interpreter_cpp.git```\
-Build the interpreter \
-```make final``` \
-Run the interpreter \
-```./interpreter``` \
-To quit the interpreter do Ctrl + c
+
+To run the interpreter, follow these steps:
+
+Clone the repository:
+
+```bash
+git clone https://github.com/alexanderbowler/interpreter_cpp.git
+```
+
+Build the interpreter:
+
+```bash
+make final
+```
+
+Run the interpreter:
+
+```bash
+./interpreter
+```
+
+To quit the interpreter, press `Ctrl+C`.
+
+The demo below shows the clone, build, and run flow:
+
+<img src="README_graphics/Compilation.gif" alt="Compilation Demo" width="900">
 
 ## Available Commands
-The interpreter can run a variety of commands: \
-Equivalent of `print()` is `puts()` which prints the output in string format and returns null \
-Create and bind variables with `let` ie. `let x = 5` \
-Evaluate most basic mathematical operations ie. `(5+4) * 8 / 2 + 1 * 3` \
-Comparisons of primitive types are supported `1 < 2` `3 != 4` \
-Create control flow `if (x < y) { x } else { y }`\
-Create functions `let mult = fn(x, y) { return x * y };`\
-Arrays and array manipulation `let a = [1, 2, 3]`, `len(a) = 3`, `first(a) = 1`, `push(a, 4)` \
-Hashmaps `let h = {"a": 1, "b": 2};`, `h["a"]` \
 
-Demo:\
-<img src="README_graphics/Interpreter_demo.gif" alt="Interpreter Demo" style="width: 50%; height: auto;">
+The interpreter can run a variety of commands:
+
+- The equivalent of `print()` is `puts()`, which prints the output in string format and returns `null`.
+- Create and bind variables with `let`, e.g., `let x = 5`.
+- Evaluate most basic mathematical operations, e.g., `(5 + 4) * 8 / 2 + 1 * 3`.
+- Compare primitive types, e.g., `1 < 2` and `3 != 4`.
+- Create control flow with `if (x < y) { x } else { y }`.
+- Create functions, e.g., `let mult = fn(x, y) { return x * y };`.
+- Create and use arrays, e.g., `let a = [1, 2, 3]`, `len(a)`, `first(a)`, and `push(a, 4)`.
+- Create and index hash maps, e.g., `let h = {"a": 1, "b": 2};` and `h["a"]`.
+
+The demo below shows several supported Monkey language features running in the interpreter:
+
+<img src="README_graphics/Interpreter_demo.gif" alt="Interpreter Demo" width="900">
 
 ## Testing
-To compile and run tests do ```cmake -S {source_dir} -B {build_dir}``` ex. ```cmake -S . -B build```\
-then run the following, ```cmake --build {build_dir}``` ex. ```cmake --build build```, then run ```cd build && ctest``` from within build_dir
+
+To compile and run the tests, configure the build directory:
+
+```bash
+cmake -S . -B build
+```
+
+Build the test target:
+
+```bash
+cmake --build build
+```
+
+Run the test suite from the build directory:
+
+```bash
+cd build
+ctest
+```
 
 ## FAQs
-Why C++? \
-C++ is a highly performant with many other langauges or compilers written in either C++ or C.
+
+### Why C++?
+
+C++ is highly performant, and many languages and compilers are written in C or C++.
