@@ -99,3 +99,7 @@ ctest
 ### Why C++?
 
 C++ is highly performant, and many languages and compilers are written in C or C++.
+
+### What is the difference between an interpreted vs. compiled language?
+
+A compiled language translates the entire program into machine code before it runs. This usually creates an executable file and can make programs run faster. An interpreted language runs code live by reading and executing it step by step through an interpreter at runtime. This often makes testing and debugging easier, but execution can be slower.
